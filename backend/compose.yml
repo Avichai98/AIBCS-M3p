@@ -1,0 +1,19 @@
+services:
+
+  #data_service:
+   # image: ${DOCKER_REGISTRY-}gallerubackendmanageraccount
+   # build:
+    #  context: .
+    #  dockerfile: ./backend/services/kotlin-services/DataService/Dockerfile
+   # depends_on:
+    #  - mongodb
+
+
+  mongodb:
+    image: 'mongo:latest'
+    environment:
+      - 'MONGO_INITDB_DATABASE=mydatabase'
+      - 'MONGO_INITDB_ROOT_PASSWORD=secret'
+      - 'MONGO_INITDB_ROOT_USERNAME=root'
+    ports:
+      - '27017'
