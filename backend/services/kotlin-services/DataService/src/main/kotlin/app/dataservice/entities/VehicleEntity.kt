@@ -2,7 +2,6 @@ package app.dataservice.entities
 
 import org.springframework.data.annotation.Id
 import org.springframework.data.mongodb.core.mapping.Document
-import java.awt.Image
 import java.util.*
 
 @Document (collection = "vehicles")
