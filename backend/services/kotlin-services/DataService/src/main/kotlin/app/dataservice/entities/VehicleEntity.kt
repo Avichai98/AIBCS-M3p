@@ -33,6 +33,4 @@ class VehicleEntity (
                 " latitude=$latitude," +
                 " longitude=$longitude)"
     }
-
-
 }
