@@ -1,5 +1,6 @@
 package app.dataservice.boundaries
 
+import app.dataservice.entities.AlertEntity
 import java.util.Date
 
 class AlertBoundary(
@@ -8,7 +9,7 @@ class AlertBoundary(
     var severity: String?,
     var description: String?,
     var timestamp: Date?,
-    var vehicleEntity: VehicleEntity?
+    var vehicleBoundary: VehicleBoundary?
 ) {
     constructor(): this(null, null, null, null, null, null)
 
@@ -18,7 +19,7 @@ class AlertBoundary(
         this.severity = alertEntity.severity
         this.description = alertEntity.description
         this.timestamp = alertEntity.timestamp
-        this.vehicleEntity = alertEntity.vehicleEntity
+        this.vehicleBoundary = VehicleBoundary(alertEntity.vehicleEntity!!)
     }
 
     fun toEntity(): AlertEntity{
@@ -29,7 +30,7 @@ class AlertBoundary(
         alertEntity.severity = severity
         alertEntity.description = description
         alertEntity.timestamp = timestamp
-        alertEntity.vehicleEntity = vehicleEntity
+        alertEntity.vehicleEntity = vehicleBoundary!!.toEntity()
 
         return alertEntity
     }
@@ -41,6 +42,6 @@ class AlertBoundary(
                 " severity=$severity," +
                 " description=$description," +
                 " timestamp=$timestamp," +
-                " VehicleEntity=$vehicleEntity)"
+                " VehicleBoundary=$vehicleBoundary)"
     }
 }
