@@ -1,1 +1,3 @@
 rootProject.name = "kotlin-services"
+
+include 'DataService'
