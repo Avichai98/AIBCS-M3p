@@ -14,10 +14,11 @@ class VehicleEntity (
     var imageUrl: String?,
     var description: String?,
     var timestamp: Date?,
+    var stayDuration: Long?,
     var latitude: Double?,
     var longitude: Double?
 ) {
-    constructor(): this(null, null, null,null, null, null, null, null, null, null)
+    constructor(): this(null ,null, null, null,null, null, null, null, null, null, null)
 
     override fun toString(): String {
         return "VehicleEntity(" +
@@ -29,6 +30,7 @@ class VehicleEntity (
                 " imageUrl=$imageUrl," +
                 " description=$description," +
                 " timestamp=$timestamp," +
+                " stayDuration=$stayDuration," +
                 " latitude=$latitude," +
                 " longitude=$longitude)"
     }

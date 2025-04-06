@@ -11,7 +11,7 @@ class AlertEntity(
     var severity: String?,
     var description: String?,
     var timestamp: Date?,
-    var VehicleEntity: VehicleEntity?
+    var vehicleEntity: VehicleEntity?
 ) {
     constructor(): this(null, null, null, null, null, null)
 
@@ -22,6 +22,6 @@ class AlertEntity(
                 " severity=$severity," +
                 " description=$description," +
                 " timestamp=$timestamp," +
-                " VehicleEntity=$VehicleEntity)"
+                " VehicleEntity=$vehicleEntity)"
     }
 }
