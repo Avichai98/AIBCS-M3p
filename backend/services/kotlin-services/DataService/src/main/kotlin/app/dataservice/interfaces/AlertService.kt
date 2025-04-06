@@ -7,10 +7,10 @@ import java.util.Date
 
 interface AlertService {
     fun createAlert(alert: AlertBoundary): Mono<AlertBoundary>
-    fun deleteAlert(id: String, alert: AlertBoundary): Mono<Void>
+    fun deleteAlert(id: String): Mono<Void>
     fun getAlertById(id: String): Mono<AlertBoundary>
     fun getAlertsPage(page: Int, size: Int): Flux<AlertBoundary>
-    fun getAllByVehicle(id: String, page: Int, size: Int): Flux<AlertBoundary>
-    fun getAllByTimestampAfter(date: Date, page: Int, size: Int): Flux<AlertBoundary>
+    fun getAlertsByVehicle(id: String, page: Int, size: Int): Flux<AlertBoundary>
+    fun getAlertsByTimestampAfter(timestamp: String, page: Int, size: Int): Flux<AlertBoundary>
     fun deleteAll(): Mono<Void>
 }

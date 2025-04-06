@@ -62,7 +62,6 @@ class UserServiceimpl(
 
     override fun deleteUser(
         id: String,
-        user: UserBoundary
     ): Mono<Void> {
         return userCrud
             .deleteById(id)
