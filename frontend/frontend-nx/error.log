@@ -1,0 +1,11 @@
+
+ NX   Failed to process project graph.
+
+An error occurred while processing files for the @nx/cypress/plugin plugin (Defined at nx.json#plugins[4])
+.
+  - apps/client-app-e2e/cypress.config.ts: Bindings not found
+An error occurred while processing files for the @nx/react/router-plugin plugin (Defined at nx.json#plugins[1])
+.
+  - apps/client-app/react-router.config.ts: Bindings not found
+
+
