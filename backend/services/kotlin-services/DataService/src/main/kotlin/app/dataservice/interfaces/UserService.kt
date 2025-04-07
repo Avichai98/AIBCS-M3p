@@ -7,9 +7,9 @@ import reactor.core.publisher.Mono
 interface UserService {
     fun createUser(user: UserBoundary): Mono<UserBoundary>
     fun updateUser(id: String, user: UserBoundary): Mono<Void>
-    fun deleteUser(id: String, user: UserBoundary): Mono<Void>
     fun getUserById(id: String): Mono<UserBoundary>
     fun getUserByEmail(email: String): Mono<UserBoundary>
     fun getUsersPage(page: Int, size: Int): Flux<UserBoundary>
+    fun deleteUser(id: String): Mono<Void>
     fun deleteAll(): Mono<Void>
 }

@@ -10,6 +10,7 @@ import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
+import java.text.SimpleDateFormat
 import java.util.Date
 
 @Service
@@ -40,7 +41,7 @@ class VehicleServiceimpl(
     override fun updateVehicle(
         id: String,
         updatedVehicle: VehicleBoundary
-    ): Mono<VehicleBoundary> {
+    ): Mono<Void> {
         return vehicleCrud
             .findById(id)
             .switchIfEmpty(Mono.error(NotFoundException404("User with the id: $id not found")))
@@ -57,16 +58,15 @@ class VehicleServiceimpl(
                 it.stayDuration = Date().time - it.timestamp!!.time
                 this.vehicleCrud.save(it)
             }
-            .map { VehicleBoundary(it) }
+            .then()
             .log()
     }
 
-    override fun deleteVehicle(
-        id: String,
-        vehicle: VehicleBoundary
-    ): Mono<Void> {
-        return this.vehicleCrud
-            .deleteById(id)
+    override fun getVehicleById(id: String): Mono<VehicleBoundary> {
+        return vehicleCrud
+            .findById(id)
+            .switchIfEmpty (Mono.error(NotFoundException404("Vehicle with id $id not found")))
+            .map { VehicleBoundary(it) }
             .log()
     }
 
@@ -79,14 +79,6 @@ class VehicleServiceimpl(
 
         return vehicleCrud
             .findAllByIdNotNull(PageRequest.of(page, size, Sort.Direction.ASC, "timestamp"))
-            .map { VehicleBoundary(it) }
-            .log()
-    }
-
-    override fun getVehicleById(id: String): Mono<VehicleBoundary> {
-        return vehicleCrud
-            .findById(id)
-            .switchIfEmpty (Mono.error(NotFoundException404("Vehicle with id $id not found")))
             .map { VehicleBoundary(it) }
             .log()
     }
@@ -114,14 +106,36 @@ class VehicleServiceimpl(
             .log()
     }
 
-    override fun getVehiclesAfterTimestamp(
-        date: Date,
+    override fun getVehiclesByTimestampAfter(
+        timestampStr: String,
         page: Int,
         size: Int
     ): Flux<VehicleBoundary> {
+        if (page < 0 || size < 1)
+            return Flux.empty()
+
+        val formatter = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss")
+        formatter.isLenient = false
+
+        return Mono.fromCallable { formatter.parse(timestampStr) }
+            .onErrorResume {
+                Mono.error(BadRequestException400("Invalid date format: Use YYYY-MM-DD'T'HH:mm:ss"))
+            }
+            .flatMapMany { timestamp ->
+                this.vehicleCrud
+                    .findAllByTimestampAfter(timestamp, PageRequest.of(page, size, Sort.Direction.ASC, "timestamp"))
+                    .map {
+                        VehicleBoundary(it)
+                    }
+                    .log()
+            }
+    }
+
+    override fun deleteVehicle(
+        id: String
+    ): Mono<Void> {
         return this.vehicleCrud
-            .findAllByTimestampAfter(date, PageRequest.of(page, size, Sort.Direction.ASC, "timestamp"))
-            .map { VehicleBoundary(it) }
+            .deleteById(id)
             .log()
     }
 
