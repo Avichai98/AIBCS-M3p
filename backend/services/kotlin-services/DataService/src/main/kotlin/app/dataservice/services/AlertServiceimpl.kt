@@ -38,14 +38,6 @@ class AlertServiceimpl(
             .log()
     }
 
-    override fun deleteAlert(
-        id: String,
-    ): Mono<Void> {
-        return this.alertCrud
-            .deleteById(id)
-            .log()
-    }
-
     override fun getAlertById(id: String): Mono<AlertBoundary> {
         return this.alertCrud
             .findById(id)
@@ -104,6 +96,14 @@ class AlertServiceimpl(
                     }
                     .log()
             }
+    }
+
+    override fun deleteAlert(
+        id: String,
+    ): Mono<Void> {
+        return this.alertCrud
+            .deleteById(id)
+            .log()
     }
 
     override fun deleteAll(): Mono<Void> {

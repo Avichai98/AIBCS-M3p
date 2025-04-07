@@ -20,11 +20,11 @@ class UserController(
     val userService: UserService
 ) {
     @PostMapping(
-        path = ["/createUser"],
+        path = ["/create"],
         consumes = [MediaType.APPLICATION_JSON_VALUE],
         produces = [MediaType.APPLICATION_JSON_VALUE]
     )
-    fun createUser(
+    fun create(
         @RequestBody user: UserBoundary
     ): Mono<UserBoundary>{
         return this.userService
@@ -32,27 +32,16 @@ class UserController(
     }
 
     @PostMapping(
-        path = ["/updateUser/{id}"],
+        path = ["/update/{id}"],
         consumes = [MediaType.APPLICATION_JSON_VALUE],
     )
-    fun updateUser(
+    fun update(
         @PathVariable id: String,
         @RequestBody user: UserBoundary
     ): Mono<Void>{
         return this.userService
             .updateUser(id, user)
     }
-
-    @DeleteMapping(
-        path = ["/deleteUser/{id}"],
-    )
-    fun deleteUser(
-        @PathVariable id: String
-    ): Mono<Void>{
-        return this.userService
-            .deleteUser(id)
-    }
-
 
     @GetMapping(
         path = ["/getUserById/{id}"],
@@ -64,7 +53,6 @@ class UserController(
         return  this.userService
             .getUserById(id)
     }
-
 
     @GetMapping(
         path = ["/getUserByEmail/{email}"],
@@ -87,6 +75,16 @@ class UserController(
     ): Flux<UserBoundary>{
         return this.userService
             .getUsersPage(page, size)
+    }
+
+    @DeleteMapping(
+        path = ["/delete/{id}"],
+    )
+    fun delete(
+        @PathVariable id: String
+    ): Mono<Void>{
+        return this.userService
+            .deleteUser(id)
     }
 
     @DeleteMapping(

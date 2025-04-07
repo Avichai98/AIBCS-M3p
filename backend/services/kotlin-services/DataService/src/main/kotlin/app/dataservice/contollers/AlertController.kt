@@ -20,25 +20,15 @@ class AlertController(
     val alertService: AlertService
 ) {
     @PostMapping(
-        path = ["/createAlert"],
+        path = ["/create"],
         consumes = [MediaType.APPLICATION_JSON_VALUE],
         produces = [MediaType.APPLICATION_JSON_VALUE]
     )
-    fun createAlert(
+    fun create(
         @RequestBody alert: AlertBoundary
     ): Mono<AlertBoundary>{
         return this.alertService
         .createAlert(alert)
-    }
-
-    @DeleteMapping(
-        path = ["/deleteAlert/{id}"]
-    )
-    fun deleteAlert(
-        @PathVariable id: String
-    ): Mono<Void>{
-        return this.alertService
-        .deleteAlert(id)
     }
 
     @GetMapping(
@@ -56,7 +46,7 @@ class AlertController(
         path = ["/getAlerts"],
         produces = [MediaType.TEXT_EVENT_STREAM_VALUE]
     )
-    fun getAlertsPage(
+    fun getAlerts(
         @RequestParam(name = "page", required = false, defaultValue = "0") page: Int,
         @RequestParam(name = "size", required = false, defaultValue = "20") size: Int
     ): Flux<AlertBoundary>{
@@ -78,16 +68,26 @@ class AlertController(
     }
 
     @GetMapping(
-        path = ["/getAlertsByTimestamp"],
-        produces = [MediaType.APPLICATION_JSON_VALUE]
+        path = ["/getAlertsByTimestamp/{timestampStr}"],
+        produces = [MediaType.TEXT_EVENT_STREAM_VALUE]
     )
     fun getAlertsByTimestamp(
-        @RequestParam("timestampStr") timestampStr: String,
+        @PathVariable("timestampStr") timestampStr: String,
         @RequestParam(name = "page", required = false, defaultValue = "0") page: Int,
         @RequestParam(name = "size", required = false, defaultValue = "20") size: Int
     ): Flux<AlertBoundary>{
         return this.alertService
             .getAlertsByTimestampAfter(timestampStr, page, size)
+    }
+
+    @DeleteMapping(
+        path = ["/delete/{id}"]
+    )
+    fun delete(
+        @PathVariable id: String
+    ): Mono<Void>{
+        return this.alertService
+            .deleteAlert(id)
     }
 
     @DeleteMapping(

@@ -60,14 +60,6 @@ class UserServiceimpl(
             .then()
     }
 
-    override fun deleteUser(
-        id: String,
-    ): Mono<Void> {
-        return userCrud
-            .deleteById(id)
-            .log()
-    }
-
     override fun getUserById(id: String): Mono<UserBoundary> {
         return userCrud
             .findById(id)
@@ -94,6 +86,14 @@ class UserServiceimpl(
         return userCrud
             .findAllByIdNotNull(PageRequest.of(page, size, Sort.Direction.ASC, "username"))
             .map { UserBoundary(it) }
+            .log()
+    }
+
+    override fun deleteUser(
+        id: String,
+    ): Mono<Void> {
+        return userCrud
+            .deleteById(id)
             .log()
     }
 
