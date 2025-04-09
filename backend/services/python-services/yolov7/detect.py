@@ -13,7 +13,7 @@ from utils.general import check_img_size, check_requirements, check_imshow, non_
     scale_coords, xyxy2xywh, strip_optimizer, set_logging, increment_path
 from utils.plots import plot_one_box
 from utils.torch_utils import select_device, load_classifier, time_synchronized, TracedModel
-
+import json
 
 def detect(save_img=False):
     source, weights, view_img, save_txt, imgsz, trace = opt.source, opt.weights, opt.view_img, opt.save_txt, opt.img_size, not opt.no_trace
@@ -176,6 +176,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--weights', nargs='+', type=str, default='yolov7.pt', help='model.pt path(s)')
     parser.add_argument('--source', type=str, default='inference/images', help='source')  # file/folder, 0 for webcam
+    """
+    can also send only the path of the image
+    for example: inference/images/1.jpg"""
     parser.add_argument('--img-size', type=int, default=640, help='inference size (pixels)')
     parser.add_argument('--conf-thres', type=float, default=0.30, help='object confidence threshold')
     parser.add_argument('--iou-thres', type=float, default=0.45, help='IOU threshold for NMS')
@@ -202,6 +205,8 @@ if __name__ == '__main__':
     """
     write in the default name the name of the folder where you want to save the results
     for example: exp5, exp6, exp7, etc.
+    or even the path of the folder where you want to save the results
+    for example: /home/user/Desktop/output
     """
     parser.add_argument('--exist-ok',default=True, action='store_true', help='existing project/name ok, do not increment')
     parser.add_argument('--no-trace', action='store_true', help='don`t trace model')
@@ -215,3 +220,5 @@ if __name__ == '__main__':
                 strip_optimizer(opt.weights)
         else:
             detect()
+    with open("json_output/output.json", "w") as f:
+        json.dump(output_array, f)
