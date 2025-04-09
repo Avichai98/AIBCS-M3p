@@ -1,1 +1,1 @@
-detect.py --weights yolov7.pt --source inference/images --img-size 640 --conf-thres 0.30 --iou-thres 0.45 --classes 0 1 2 3 5 7  --project runs/detect --name exp5
+detect.py --weights yolov7.pt --source inference/images --img-size 640 --conf-thres 0.30 --iou-thres 0.45  --project runs/detect --name output_images
