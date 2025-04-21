@@ -12,10 +12,10 @@ import os
 import classifier
 
 
-def car_detection(image_path, yolo_path="model+color-yolov4\yolov4", confidence_threshold=0.5, nms_threshold=0.3):
+def car_detection(image_path, yolo_path=r"model+color-yolov4\yolov4", confidence_threshold=0.5, nms_threshold=0.3):
 
 	# Set default values for arguments
-	image_path = "Untitled.jpeg"  # Default path to input image
+	#image_path = "bus.jpeg"  # Default path to input image
 
 	car_color_classifier = classifier.Classifier()
 
@@ -38,6 +38,8 @@ def car_detection(image_path, yolo_path="model+color-yolov4\yolov4", confidence_
 
 	# load our input image and grab its spatial dimensions
 	image = cv2.imread(image_path)
+	#image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
 	(H, W) = image.shape[:2]
 
 	# determine only the *output* layer names that we need from YOLO
@@ -112,7 +114,7 @@ def car_detection(image_path, yolo_path="model+color-yolov4\yolov4", confidence_
 
 			# draw a bounding box rectangle and label on the image
 			color = [int(c) for c in COLORS[classIDs[i]]]
-			if classIDs[i] == 2:
+			if classIDs[i] in [2, 5, 7]:
 				#start = time.time()
 				result = car_color_classifier.predict(image[max(y,0):y + h, max(x,0):x + w])
 				#end = time.time()
@@ -147,11 +149,12 @@ def car_detection(image_path, yolo_path="model+color-yolov4\yolov4", confidence_
 	# print("[INFO] Detections:")
 	# for detection in detections:
 	# 	print(detection)
-	return detections
-	# show the output image
+	
+	# #show the output image
 	# cv2.namedWindow('Image', cv2.WINDOW_NORMAL)
 	# cv2.resizeWindow('Image', W, H)
 	# cv2.imshow("Image", image)
 	# cv2.imwrite("output.jpg", image)
 	# cv2.waitKey(0)
 	# cv2.destroyAllWindows()
+	return detections
