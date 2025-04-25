@@ -1,12 +1,31 @@
 services:
 
-  #data_service:
-   # image: ${DOCKER_REGISTRY-}gallerubackendmanageraccount
-   # build:
-    #  context: .
-    #  dockerfile: ./backend/services/kotlin-services/DataService/Dockerfile
-   # depends_on:
-    #  - mongodb
+  car-detection-service:
+    build:
+      context: ./car-detection-service
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    depends_on:
+      - mongodb
+
+  data-management-service:
+    build:
+      context: ./data-management-service
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mongodb
+
+  alert-management-service:
+    build:
+      context: ./alert-management-service
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8081"
+    depends_on:
+      - mongodb
 
 
   mongodb:
@@ -16,4 +35,10 @@ services:
       - 'MONGO_INITDB_ROOT_PASSWORD=secret'
       - 'MONGO_INITDB_ROOT_USERNAME=root'
     ports:
-      - '27017'
+      - '27017:27017'
+    volumes:
+      - mongodb_data:/data/db
+
+volumes:
+  mongodb_data:
+
