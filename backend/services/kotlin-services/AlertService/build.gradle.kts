@@ -34,7 +34,7 @@ dependencies {
 	testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
-	implementation("org.springframework.boot:spring-boot-starter-kafka")
+	//implementation("org.springframework.boot:spring-boot-starter-kafka")
 }
 
 kotlin {
