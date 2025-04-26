@@ -14,7 +14,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 
 @Service
-class VehicleServiceimpl(
+class VehicleServiceImpl(
     val vehicleCrud: VehicleCrud
 ) : VehicleService {
     override fun createVehicle(vehicle: VehicleBoundary): Mono<VehicleBoundary> {
