@@ -50,7 +50,7 @@ class UserController(
     fun getUserById(
         @PathVariable id: String
     ): Mono<UserBoundary>{
-        return  this.userService
+        return this.userService
             .getUserById(id)
     }
 
