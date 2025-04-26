@@ -1,4 +1,4 @@
-package app.dataservice.contollers
+package app.dataservice.controllers
 
 import app.dataservice.boundaries.UserBoundary
 import app.dataservice.interfaces.UserService

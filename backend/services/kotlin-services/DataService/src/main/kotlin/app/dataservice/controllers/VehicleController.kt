@@ -1,4 +1,4 @@
-package app.dataservice.contollers
+package app.dataservice.controllers
 
 import app.dataservice.boundaries.VehicleBoundary
 import app.dataservice.interfaces.VehicleService
