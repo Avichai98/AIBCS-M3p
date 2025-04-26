@@ -14,7 +14,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 
 @Service
-class AlertServiceimpl(
+class AlertServiceImpl(
     val alertCrud: AlertCrud
 ):
     AlertService {
