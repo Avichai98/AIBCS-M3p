@@ -1,19 +1,58 @@
+version: '3.8'
 services:
 
-  #data_service:
-   # image: ${DOCKER_REGISTRY-}gallerubackendmanageraccount
-   # build:
-    #  context: .
-    #  dockerfile: ./backend/services/kotlin-services/DataService/Dockerfile
-   # depends_on:
-    #  - mongodb
+  car-detection-service:
+    build:
+      context: ./services/python-services/Damaged-Car-parts-prediction-Model
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    depends_on:
+      - mongodb
 
+  data-management-service:
+    build:
+      context: ./services/kotlin-services/DataService
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mongodb
+
+
+  alert-management-service:
+    build:
+      context: ./services/kotlin-services/AlertService
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8081"
+    depends_on:
+      - mongodb
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
 
   mongodb:
     image: 'mongo:latest'
-    environment:
-      - 'MONGO_INITDB_DATABASE=mydatabase'
-      - 'MONGO_INITDB_ROOT_PASSWORD=secret'
-      - 'MONGO_INITDB_ROOT_USERNAME=root'
     ports:
-      - '27017'
+      - '27017:27017'
+    volumes:
+      - mongodb_data:/data/db
+
+
+volumes:
+  mongodb_data:
+

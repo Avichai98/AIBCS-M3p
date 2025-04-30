@@ -4,7 +4,7 @@ import org.springframework.data.annotation.Id
 import org.springframework.data.mongodb.core.mapping.Document
 import java.util.*
 
-@Document (collation = "Alerts")
+@Document (collection = "Alerts")
 class AlertEntity(
     @Id var id: String?,
     var type: String?,
