@@ -2,14 +2,29 @@ import numpy as np
 import classifier
 import cv2
 import pprint
-yolocfg = r'vehicle-recognition-api-yolov4-python-master\yolov4\yolov4.cfg'
-yoloweights = r'vehicle-recognition-api-yolov4-python-master\yolov4\yolov4.weights'
-modelbrandweights = r'C:\Users\Tomer\Documents\visual studio code\AIBCS-M3p\backend\services\python-services\vehicle-recognition-api-yolov4-python-master\model-weights-spectrico-car-brand-recognition-mobilenet_v3-224x224-170620.mnn'
-modelcolorweights = r'C:\Users\Tomer\Documents\visual studio code\AIBCS-M3p\backend\services\python-services\vehicle-recognition-api-yolov4-python-master\model-weights-spectrico-car-colors-recognition-mobilenet_v3-224x224-180420.mnn'
-image = r'C:\Users\Tomer\Documents\visual studio code\AIBCS-M3p\backend\services\python-services\vehicle-recognition-api-yolov4-python-master\bus.jpg'
-lebels_colors = r'C:\Users\Tomer\Documents\visual studio code\AIBCS-M3p\backend\services\python-services\vehicle-recognition-api-yolov4-python-master\labels-colors.txt'
-lebels_makes = r'C:\Users\Tomer\Documents\visual studio code\AIBCS-M3p\backend\services\python-services\vehicle-recognition-api-yolov4-python-master\labels-makes.txt'
-coco_names = r'C:\Users\Tomer\Documents\visual studio code\AIBCS-M3p\backend\services\python-services\vehicle-recognition-api-yolov4-python-master\yolov4\coco.names'
+import os
+import glob
+# yolocfg = r'vehicle-recognition-api-yolov4-python-master\yolov4\yolov4.cfg'
+# yoloweights = r'vehicle-recognition-api-yolov4-python-master\yolov4\yolov4.weights'
+# modelbrandweights = r'C:\Users\Tomer\Documents\visual studio code\AIBCS-M3p\backend\services\python-services\vehicle-recognition-api-yolov4-python-master\model-weights-spectrico-car-brand-recognition-mobilenet_v3-224x224-170620.mnn'
+# modelcolorweights = r'C:\Users\Tomer\Documents\visual studio code\AIBCS-M3p\backend\services\python-services\vehicle-recognition-api-yolov4-python-master\model-weights-spectrico-car-colors-recognition-mobilenet_v3-224x224-180420.mnn'
+# image = r'C:\Users\Tomer\Documents\visual studio code\AIBCS-M3p\backend\services\python-services\vehicle-recognition-api-yolov4-python-master\bus.jpg'
+# lebels_colors = r'C:\Users\Tomer\Documents\visual studio code\AIBCS-M3p\backend\services\python-services\vehicle-recognition-api-yolov4-python-master\labels-colors.txt'
+# lebels_makes = r'C:\Users\Tomer\Documents\visual studio code\AIBCS-M3p\backend\services\python-services\vehicle-recognition-api-yolov4-python-master\labels-makes.txt'
+# coco_names = r'C:\Users\Tomer\Documents\visual studio code\AIBCS-M3p\backend\services\python-services\vehicle-recognition-api-yolov4-python-master\yolov4\coco.names'
+
+def get_items():
+    files = []
+    base_path = os.path.dirname(os.path.abspath(__file__))
+    files.append(os.path.join(base_path, 'vehicle-recognition-api-yolov4-python-master', 'yolov4', 'yolov4.cfg'))
+    files.append(os.path.join(base_path, 'vehicle-recognition-api-yolov4-python-master', 'yolov4', 'yolov4.weights'))
+    files.append(os.path.join(base_path, 'vehicle-recognition-api-yolov4-python-master', 'model-weights-spectrico-car-brand-recognition-mobilenet_v3-224x224-170620.mnn'))
+    files.append(os.path.join(base_path, 'vehicle-recognition-api-yolov4-python-master', 'model-weights-spectrico-car-colors-recognition-mobilenet_v3-224x224-180420.mnn'))
+    files.append(os.path.join(base_path, 'vehicle-recognition-api-yolov4-python-master', 'labels-colors.txt'))
+    files.append(os.path.join(base_path, 'vehicle-recognition-api-yolov4-python-master', 'labels-makes.txt'))
+    files.append(os.path.join(base_path, 'vehicle-recognition-api-yolov4-python-master', 'yolov4', 'coco.names'))
+    return files
+
 class model():
     def __init__(self, yolocfg, yoloweights,modelbrandweights, modelcolorweights, labels_colors, labels_makes,coco_names):
         self.net = cv2.dnn_DetectionModel(yolocfg, yoloweights)
@@ -43,8 +58,9 @@ class model():
                     objects.append({"object":LABELS[classId],"make": make, "color": color, "make_prob": str(make_confidence), "color_prob": str(color_confidence), "object_prob": str(confidence), "rect": rect})
         
         return {'vehicles': objects}
-    
 
-mymodel = model(yolocfg, yoloweights,modelbrandweights, modelcolorweights, lebels_colors, lebels_makes,coco_names)
-output = mymodel.objectDetect(image)
-pprint.pprint(output)
+if __name__ == "__main__":    
+    paths = get_items()
+    mymodel = model(paths[0], paths[1], paths[2], paths[3], paths[4], paths[5], paths[6])
+    output = mymodel.objectDetect(image)
+    pprint.pprint(output)
