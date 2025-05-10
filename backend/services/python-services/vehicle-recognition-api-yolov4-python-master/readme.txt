@@ -1,0 +1,1 @@
+taken from https://github.com/TheDeveloperMask/vehicle-recognition-api-yolov4-python/tree/master
