@@ -1,6 +1,7 @@
 package app.alertservice.services
 
 import app.alertservice.boundaries.AlertBoundary
+import app.alertservice.email.EmailService
 import app.alertservice.interfaces.AlertService
 import jakarta.annotation.PostConstruct
 import org.springframework.beans.factory.annotation.Value
@@ -13,6 +14,7 @@ import reactor.core.publisher.Mono
 @Service
 class AlertServiceImpl(
     private val kafkaTemplate: KafkaTemplate<String, AlertBoundary>
+    , private val emailService: EmailService
 ) :
     AlertService {
     lateinit var dataServiceUrl: String
@@ -41,7 +43,12 @@ class AlertServiceImpl(
     }
 
     override fun sendAlert(alert: AlertBoundary): Mono<Void> {
-        kafkaTemplate.send("alerts", alert)
-        return Mono.empty()
+        return Mono.fromRunnable<Unit> {
+            emailService.sendEmail(
+                to = "tchjha2@gmail.com",
+                subject = "בדיקת שליחת מייל",
+                body = "זהו מייל בדיקה מתהליך ההתראה."
+            )
+        }.then()
     }
 }
