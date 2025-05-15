@@ -18,13 +18,14 @@ class AlertServiceImpl(
     lateinit var dataServiceUrl: String
     lateinit var webClient: WebClient
 
-    @Value("\${remote.alerts.service.url: http://localhost:8080/alerts}")
+    @Value("\${remote.alerts.service.url: http://data-management-service:8080/alerts}")
     fun setRemoteUrl(url: String) {
         this.dataServiceUrl = url
     }
 
     @PostConstruct
     fun init() {
+        System.err.println("***** $dataServiceUrl")
         System.err.println("***** $dataServiceUrl")
         this.webClient = WebClient.create(dataServiceUrl)
     }

@@ -1,14 +1,14 @@
 version: '3.8'
 services:
 
-  car-detection-service:
-    build:
-      context: ./services/python-services/Damaged-Car-parts-prediction-Model
-      dockerfile: Dockerfile
-    ports:
-      - "5000:5000"
-    depends_on:
-      - mongodb
+  #car-detection-service:
+   # build:
+    #  context: ./services/python-services/Damaged-Car-parts-prediction-Model
+     # dockerfile: Dockerfile
+    #ports:
+     # - "5000:5000"
+    #depends_on:
+     # - mongodb
 
   data-management-service:
     build:
