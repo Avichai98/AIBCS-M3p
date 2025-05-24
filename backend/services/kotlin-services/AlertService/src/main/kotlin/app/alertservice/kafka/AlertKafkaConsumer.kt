@@ -5,7 +5,7 @@ import app.alertservice.interfaces.AlertService
 import org.springframework.kafka.annotation.KafkaListener
 import org.springframework.stereotype.Service
 
-@Service
+//@Service
 class AlertKafkaConsumer(
     private val alertService: AlertService
 ) {

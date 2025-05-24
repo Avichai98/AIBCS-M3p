@@ -19,7 +19,10 @@ class AlertController(
     )
     fun createAlert(@RequestBody alert: AlertBoundary): Mono<AlertBoundary> {
         return this.alertService
-            .createAlert(alert)
-            .flatMap { alertService.sendAlert(it).thenReturn(it) }
+            .sendAlert(alert)
+            .then(
+                this.alertService
+                    .createAlert(alert)
+            )
     }
 }
