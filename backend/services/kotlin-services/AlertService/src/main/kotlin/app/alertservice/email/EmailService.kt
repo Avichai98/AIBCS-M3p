@@ -1,27 +1,32 @@
 package app.alertservice.email
 
-import jakarta.mail.MessagingException
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.mail.SimpleMailMessage
 import org.springframework.mail.javamail.JavaMailSender
 import org.springframework.stereotype.Service
+import reactor.core.publisher.Mono
+import reactor.core.scheduler.Schedulers
 
 @Service
 class EmailService(
-    @Autowired private val mailSender: JavaMailSender
+    private val mailSender: JavaMailSender
 ) {
 
-    fun sendEmail(to: String, subject: String, body: String) {
-        try {
-            val message = SimpleMailMessage()
-            message.setTo(to)
-            message.subject = subject
-            message.text = body
+    fun sendEmail(to: String, subject: String, body: String): Mono<Void> {
+        return Mono.fromRunnable<Void> {
+            val message = SimpleMailMessage().apply {
+                setTo(to)
+                this.subject = subject
+                text = body
+            }
+            println(">>> About to send email: $message")
             mailSender.send(message)
-            println("Email sent to $to")
-        } catch (e: MessagingException) {
-            println("Failed to send email: ${e.message}")
-            e.printStackTrace()
+            println(">>> Email send() returned")
         }
+            .subscribeOn(Schedulers.boundedElastic())
+            .doOnError { e ->
+                System.err.println("❌ Error sending email: ${e.message}")
+                e.printStackTrace()
+            }
+            .then() // Return Mono<Void>
     }
 }

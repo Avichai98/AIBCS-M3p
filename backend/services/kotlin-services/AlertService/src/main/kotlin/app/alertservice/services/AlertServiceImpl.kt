@@ -13,10 +13,8 @@ import reactor.core.publisher.Mono
 
 @Service
 class AlertServiceImpl(
-    private val kafkaTemplate: KafkaTemplate<String, AlertBoundary>
-    , private val emailService: EmailService
-) :
-    AlertService {
+    private val kafkaTemplate: KafkaTemplate<String, AlertBoundary>, private val emailService: EmailService
+) : AlertService {
     lateinit var dataServiceUrl: String
     lateinit var webClient: WebClient
 
@@ -28,28 +26,24 @@ class AlertServiceImpl(
     @PostConstruct
     fun init() {
         System.err.println("***** $dataServiceUrl")
-        System.err.println("***** $dataServiceUrl")
         this.webClient = WebClient.create(dataServiceUrl)
     }
 
     override fun createAlert(alert: AlertBoundary): Mono<AlertBoundary> {
-        return this.webClient
-            .post()
-            .uri("/create")
-            .accept(MediaType.APPLICATION_JSON)
-            .bodyValue(alert)
-            .retrieve()
-            .bodyToMono(AlertBoundary::class.java)
-            .log()
+        return this.webClient.post().uri("/create").accept(MediaType.APPLICATION_JSON).bodyValue(alert).retrieve()
+            .bodyToMono(AlertBoundary::class.java).doOnError { e -> e.printStackTrace() }.log()
     }
 
     override fun sendAlert(alert: AlertBoundary): Mono<Void> {
-        return Mono.fromRunnable<Unit> {
-            emailService.sendEmail(
-                to = "tchjha2@gmail.com",
-                subject = "בדיקת שליחת מייל",
-                body = "זהו מייל בדיקה מתהליך ההתראה."
-            )
-        }.then()
+        return emailService.sendEmail(
+            to = "tchjha2@gmail.com",
+            subject = "Test email from alert process",
+            body = "This is a test email from the alert workflow."
+        ).onErrorResume { e ->
+                println("Failed to send alert email: ${e.message}")
+                Mono.empty()
+            }
+
     }
+
 }
