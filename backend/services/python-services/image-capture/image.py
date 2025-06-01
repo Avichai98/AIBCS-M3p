@@ -6,7 +6,8 @@ import os
 app = Flask(__name__)
 
 def capture_image():
-    cam_port = 1
+    #the number is the index of your camera
+    cam_port = 0
     cam = VideoCapture(cam_port)
     result, image = cam.read()
     if result:
