@@ -6,7 +6,8 @@ def capture_image():
     This function captures an image from the default camera
     and saves it 
     """
-    cam_port = 1
+    #the number is based on the number of webcams on the computer -1
+    cam_port = 0
     cam = VideoCapture(cam_port)
     result, image = cam.read()
     if result:
