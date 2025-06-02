@@ -6,7 +6,7 @@ import os
 app = Flask(__name__)
 
 def capture_image():
-    #the number is the index of your camera
+    #the number is based on the number of webcams on the computer -1
     cam_port = 0
     cam = VideoCapture(cam_port)
     result, image = cam.read()
