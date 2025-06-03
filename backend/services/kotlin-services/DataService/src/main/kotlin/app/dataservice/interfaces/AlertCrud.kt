@@ -9,5 +9,5 @@ import java.util.Date
 interface AlertCrud : ReactiveMongoRepository<AlertEntity, String> {
     fun findAllByIdNotNull(pageable: Pageable): Flux<AlertEntity>
     fun findAllByVehicleEntityId(id: String, pageable: Pageable): Flux<AlertEntity>
-    fun findAllByTimestampAfter(date: Date, page: Pageable): Flux<AlertEntity>
+    fun findAllByTimestampAfter(timestamp: Date, pageable: Pageable): Flux<AlertEntity>
 }

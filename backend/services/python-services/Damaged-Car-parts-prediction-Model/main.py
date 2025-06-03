@@ -12,11 +12,7 @@ from typing import Tuple
 from PIL import Image
 #import base64
 from fastapi import Response
-  
-  
-
-
-
+import os 
 
 class Detection:
  def __init__(self, 
@@ -111,9 +107,10 @@ class Detection:
    confidence=confidence
   )
   return results 
-
+base_path = os.path.dirname(os.path.abspath(__file__))
+best_model_path = os.path.join(base_path, 'best.onnx')
 detection = Detection(
-   model_path='best.onnx', 
+   model_path=best_model_path, 
    classes=['damaged door', 'damaged window', 'damaged headlight', 'damaged mirror', 'dent', 'damaged hood', 'damaged bumper', 'damaged wind shield'] 
 )
 
