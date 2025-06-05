@@ -1,5 +1,6 @@
 package app.dataservice.interfaces
 
+import app.dataservice.boundaries.LoginBoundary
 import app.dataservice.boundaries.UserBoundary
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
@@ -12,4 +13,5 @@ interface UserService {
     fun getUsersPage(page: Int, size: Int): Flux<UserBoundary>
     fun deleteUser(id: String): Mono<Void>
     fun deleteAll(): Mono<Void>
+    fun login(login: LoginBoundary): Mono<Void>
 }

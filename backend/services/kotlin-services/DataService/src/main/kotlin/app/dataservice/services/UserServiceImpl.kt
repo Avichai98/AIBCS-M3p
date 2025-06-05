@@ -1,5 +1,6 @@
 package app.dataservice.services
 
+import app.dataservice.boundaries.LoginBoundary
 import app.dataservice.boundaries.UserBoundary
 import app.dataservice.exceptions.BadRequestException400
 import app.dataservice.exceptions.NotFoundException404
@@ -107,5 +108,19 @@ class UserServiceImpl(
 
         val emailRegex = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$"
         return Regex(emailRegex).matches(email)
+    }
+
+    override fun login(login: LoginBoundary): Mono<Void> {
+        return userCrud
+            .findByEmail(login.email)
+            .switchIfEmpty(Mono.error(BadRequestException400("Invalid email or password")))
+            .flatMap { user ->
+                if (user.password != login.password) {
+                    Mono.error(BadRequestException400("Invalid email or password"))
+                } else {
+                    Mono.empty() // 200 OK without body
+                }
+            }
+            .log()
     }
 }

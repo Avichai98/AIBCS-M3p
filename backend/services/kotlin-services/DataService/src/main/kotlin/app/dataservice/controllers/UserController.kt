@@ -1,5 +1,6 @@
 package app.dataservice.controllers
 
+import app.dataservice.boundaries.LoginBoundary
 import app.dataservice.boundaries.UserBoundary
 import app.dataservice.interfaces.UserService
 import org.springframework.web.bind.annotation.PostMapping
@@ -27,7 +28,7 @@ class UserController(
     )
     fun create(
         @RequestBody user: UserBoundary
-    ): Mono<UserBoundary>{
+    ): Mono<UserBoundary> {
         return this.userService
             .createUser(user)
     }
@@ -39,7 +40,7 @@ class UserController(
     fun update(
         @PathVariable id: String,
         @RequestBody user: UserBoundary
-    ): Mono<Void>{
+    ): Mono<Void> {
         return this.userService
             .updateUser(id, user)
     }
@@ -50,7 +51,7 @@ class UserController(
     )
     fun getUserById(
         @PathVariable id: String
-    ): Mono<UserBoundary>{
+    ): Mono<UserBoundary> {
         return this.userService
             .getUserById(id)
     }
@@ -61,8 +62,8 @@ class UserController(
     )
     fun getUserByEmail(
         @PathVariable email: String
-    ): Mono<UserBoundary>{
-        return  this.userService
+    ): Mono<UserBoundary> {
+        return this.userService
             .getUserByEmail(email)
     }
 
@@ -73,7 +74,7 @@ class UserController(
     fun getAllUsers(
         @RequestParam(name = "page", required = false, defaultValue = "0") page: Int,
         @RequestParam(name = "size", required = false, defaultValue = "20") size: Int
-    ): Flux<UserBoundary>{
+    ): Flux<UserBoundary> {
         return this.userService
             .getUsersPage(page, size)
     }
@@ -83,7 +84,7 @@ class UserController(
     )
     fun delete(
         @PathVariable id: String
-    ): Mono<Void>{
+    ): Mono<Void> {
         return this.userService
             .deleteUser(id)
     }
@@ -91,8 +92,20 @@ class UserController(
     @DeleteMapping(
         path = ["/deleteAllUsers"]
     )
-    fun deleteAllUsers(): Mono<Void>{
+    fun deleteAllUsers(
+    ): Mono<Void> {
         return this.userService
-        .deleteAll()
+            .deleteAll()
+    }
+
+    @PostMapping(
+        path = ["/login"],
+        consumes = [MediaType.APPLICATION_JSON_VALUE]
+    )
+    fun login(
+        @RequestBody login: LoginBoundary
+    ): Mono<Void> {
+        return this.userService
+            .login(login)
     }
 }
