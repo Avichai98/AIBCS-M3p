@@ -1,5 +1,6 @@
 package app.dataservice.boundaries
 
+import app.dataservice.entities.VehicleEntity
 import java.util.Date
 
 class VehicleBoundary(
@@ -11,10 +12,11 @@ class VehicleBoundary(
     var imageUrl: String?,
     var description: String?,
     var timestamp: Date?,
+    var stayDuration: Long?,
     var latitude: Double?,
     var longitude: Double?
 ) {
-    constructor(): this(null, null, null,null, null, null, null, null, null, null)
+    constructor(): this(null, null, null, null,null, null, null, null, null, null, null)
 
     constructor(vehicleEntity: VehicleEntity): this(){
         this.id = vehicleEntity.id
@@ -25,6 +27,7 @@ class VehicleBoundary(
         this.imageUrl = vehicleEntity.imageUrl
         this.description = vehicleEntity.description
         this.timestamp = vehicleEntity.timestamp
+        this.stayDuration = vehicleEntity.stayDuration
         this.latitude = vehicleEntity.latitude
         this.longitude = vehicleEntity.longitude
     }
@@ -40,6 +43,7 @@ class VehicleBoundary(
         vehicleEntity.imageUrl = imageUrl
         vehicleEntity.description = description
         vehicleEntity.timestamp = timestamp
+        vehicleEntity.stayDuration = stayDuration
         vehicleEntity.latitude = latitude
         vehicleEntity.longitude = longitude
 
@@ -56,6 +60,7 @@ class VehicleBoundary(
                 " imageUrl=$imageUrl," +
                 " description=$description," +
                 " timestamp=$timestamp," +
+                " stayDuration=$stayDuration," +
                 " latitude=$latitude," +
                 " longitude=$longitude)"
     }

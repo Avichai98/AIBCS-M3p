@@ -1,17 +1,14 @@
-package app.dataservice.entities
+package app.alertservice.boundaries
 
-import org.springframework.data.annotation.Id
-import org.springframework.data.mongodb.core.mapping.Document
-import java.util.*
+import java.util.Date
 
-@Document (collection = "Alerts")
-class AlertEntity(
-    @Id var id: String?,
+class AlertBoundary(
+    var id: String?,
     var type: String?,
     var severity: String?,
     var description: String?,
     var timestamp: Date?,
-    var vehicleEntity: VehicleEntity?
+    var vehicleBoundary: VehicleBoundary?
 ) {
     constructor(): this(null, null, null, null, null, null)
 
@@ -22,6 +19,6 @@ class AlertEntity(
                 " severity=$severity," +
                 " description=$description," +
                 " timestamp=$timestamp," +
-                " VehicleEntity=$vehicleEntity)"
+                " VehicleBoundary=$vehicleBoundary)"
     }
 }

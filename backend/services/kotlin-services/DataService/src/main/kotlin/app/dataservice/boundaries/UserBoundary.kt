@@ -1,5 +1,6 @@
 package app.dataservice.boundaries
 
+import app.dataservice.entities.UserEntity
 import java.util.Date
 
 class UserBoundary(
@@ -9,11 +10,10 @@ class UserBoundary(
     var email: String?,
     var mobile: String?,
     var username: String?,
-    var password: String?,
     var createdAt: Date?,
     var updatedAt: Date?
 ) {
-    constructor() : this(null, null, null, null, null, null, null, null, null)
+    constructor() : this(null, null, null, null, null, null, null, null)
 
     constructor(userEntity: UserEntity): this(){
         this.id = userEntity.id
@@ -22,7 +22,6 @@ class UserBoundary(
         this.email = userEntity.email
         this.mobile = userEntity.mobile
         this.username = userEntity.username
-        this.password = userEntity.password
         this.createdAt = userEntity.createdAt
         this.updatedAt = userEntity.updatedAt
     }
@@ -36,7 +35,6 @@ class UserBoundary(
         userEntity.email = email
         userEntity.mobile = mobile
         userEntity.username = username
-        userEntity.password = password
         userEntity.createdAt = createdAt
         userEntity.updatedAt = updatedAt
 
@@ -51,7 +49,6 @@ class UserBoundary(
                 " email=$email," +
                 " mobile=$mobile," +
                 " username=$username," +
-                " password=$password," +
                 " createdAt=$createdAt," +
                 " updatedAt=$updatedAt)"
     }
