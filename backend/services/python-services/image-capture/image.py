@@ -1,49 +1,48 @@
-from flask import Flask, jsonify, request
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
 from cv2 import VideoCapture, imwrite
 from datetime import datetime
 import os
 
-app = Flask(__name__)
+app = FastAPI()
 
-def capture_image():
-    cam_port = 1
-    cam = VideoCapture(cam_port)
-    result, image = cam.read()
-    if result:
-        name = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        file_path = f"{name}.png"
-        imwrite(file_path, image)
-        return file_path
-    else:
-        return None
 
-def remove_image(name):
-    file_path = f"{name}.png"
+class camera_use:
+    def __init__(self, port=0):
+        self.port = port
+        self.location = "image_output"
+
+    def capture_image(self):
+        cam = VideoCapture(self.port)
+        if not cam.isOpened():
+            raise HTTPException(
+                status_code=500,
+                detail="Camera could not be opened. Please check the device or port.",
+            )
+        result, image = cam.read()
+        cam.release()
+        if result:
+            name = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            location_name = f"{self.location}/{name}.png"
+            imwrite(location_name, image)
+            return {
+                "image": image,
+                "name": location_name,
+                "message": "Image captured successfully.",
+            }
+        else:
+            raise HTTPException(
+                status_code=500, detail="No image detected. Please try again."
+            )
+
+
+@app.delete("/image/{name}")
+def remove_image(name: str):
+    filename = f"{name}.png"
+    if not os.path.exists(filename):
+        raise HTTPException(status_code=404, detail=f"Image {filename} not found.")
     try:
-        os.remove(file_path)
-        return True
-    except FileNotFoundError:
-        return False
+        os.remove(filename)
+        return {"message": f"Image {filename} removed successfully."}
     except Exception as e:
-        return str(e)
-
-@app.route('/capture', methods=['POST'])
-def api_capture():
-    file_path = capture_image()
-    if file_path:
-        return jsonify({"status": "success", "image": file_path}), 200
-    else:
-        return jsonify({"status": "error", "message": "No image captured"}), 500
-
-@app.route('/remove/<image_name>', methods=['DELETE'])
-def api_remove(image_name):
-    result = remove_image(image_name)
-    if result is True:
-        return jsonify({"status": "success", "message": f"{image_name}.png deleted"}), 200
-    elif result is False:
-        return jsonify({"status": "error", "message": f"{image_name}.png not found"}), 404
-    else:
-        return jsonify({"status": "error", "message": result}), 500
-
-if __name__ == '__main__':
-    app.run(debug=True)
+        raise HTTPException(status_code=500, detail=str(e))
