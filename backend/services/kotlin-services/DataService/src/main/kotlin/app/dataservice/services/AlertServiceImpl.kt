@@ -98,6 +98,20 @@ class AlertServiceImpl(
             }
     }
 
+    override fun getAlertsByCameraId(
+        cameraId: String,
+        page: Int,
+        size: Int
+    ): Flux<AlertBoundary> {
+        if (page < 0 || size < 1)
+            return Flux.empty()
+
+        return this.alertCrud
+            .findAllByCameraId(cameraId, PageRequest.of(page, size, Sort.Direction.ASC, "timestamp"))
+            .map { AlertBoundary(it) }
+            .log()
+    }
+
     override fun deleteAlert(
         id: String,
     ): Mono<Void> {

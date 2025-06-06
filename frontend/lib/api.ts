@@ -1,13 +1,18 @@
+import { list } from "postcss"
+
 // API Configuration
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api"
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"
 
 // Types matching your backend
 export interface VehicleBoundary {
   id: string
+  cameraId: string
   type: string
-  model: string
   manufacturer: string
-  color: string
+  color: String
+  typeProb: number
+  manufacturerProb: number
+  colorProb: number
   imageUrl: string
   description: string
   timestamp: string
@@ -18,17 +23,18 @@ export interface VehicleBoundary {
 
 export interface Alert {
   id: string
+  cameraId: string
   type: string
   severity: "Low" | "Medium" | "High" | "Critical"
   description: string
   timestamp: string
-  cameraId?: string // You mentioned this will be added later
   vehicleBoundary: VehicleBoundary
 }
 
 export interface Camera {
   id: string
   name: string
+  emails: string[]
   location: string
   alertCount: number
   isActive: boolean
@@ -74,7 +80,6 @@ class ApiService {
 
     try {
       const response = await fetch(url, config)
-
       if (!response.ok) {
         if (response.status === 401) {
           // Handle unauthorized - redirect to login
@@ -95,7 +100,7 @@ class ApiService {
 
   // Authentication
   async login(credentials: LoginCredentials): Promise<{ user: User; token: string }> {
-    return this.request("/auth/login", {
+    return this.request<{ user: User; token: string }>("/users/login", {
       method: "POST",
       body: JSON.stringify(credentials),
     })
@@ -108,12 +113,12 @@ class ApiService {
   }
 
   // Camera Management
-  async getCameras(): Promise<Camera[]> {
-    return this.request("/cameras")
+  async getCameras(email: string): Promise<Camera[]> {
+    return this.request(`/cameras/getCamerasByEmail/${email}`)
   }
 
   async getCamera(id: string): Promise<Camera> {
-    return this.request(`/cameras/${id}`)
+    return this.request(`/cameras/getCameraById/${id}`)
   }
 
   async updateCameraStatus(id: string, isActive: boolean): Promise<Camera> {
@@ -137,23 +142,9 @@ class ApiService {
   // Alerts/Violations
   async getAlerts(
     cameraId: string,
-    filters?: {
-      severity?: string
-      type?: string
-      search?: string
-      page?: number
-      limit?: number
-    },
-  ): Promise<{ alerts: Alert[]; total: number; page: number; totalPages: number }> {
-    const params = new URLSearchParams()
-    if (filters?.severity) params.append("severity", filters.severity)
-    if (filters?.type) params.append("type", filters.type)
-    if (filters?.search) params.append("search", filters.search)
-    if (filters?.page) params.append("page", filters.page.toString())
-    if (filters?.limit) params.append("limit", filters.limit.toString())
-
-    const queryString = params.toString()
-    const endpoint = `/cameras/${cameraId}/alerts${queryString ? `?${queryString}` : ""}`
+  ): Promise<Alert[]> {
+   
+    const endpoint = `/alerts/getAlertsByCamera/${cameraId}`
 
     return this.request(endpoint)
   }

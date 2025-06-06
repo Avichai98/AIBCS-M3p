@@ -10,4 +10,5 @@ interface AlertCrud : ReactiveMongoRepository<AlertEntity, String> {
     fun findAllByIdNotNull(pageable: Pageable): Flux<AlertEntity>
     fun findAllByVehicleEntityId(id: String, pageable: Pageable): Flux<AlertEntity>
     fun findAllByTimestampAfter(timestamp: Date, pageable: Pageable): Flux<AlertEntity>
+    fun findAllByCameraId(cameraId: String, pageable: Pageable): Flux<AlertEntity>
 }

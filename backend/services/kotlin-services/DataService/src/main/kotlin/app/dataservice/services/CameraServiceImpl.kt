@@ -1,0 +1,148 @@
+package app.dataservice.services
+
+import app.dataservice.boundaries.CameraBoundary
+import app.dataservice.exceptions.BadRequestException400
+import app.dataservice.interfaces.CameraCrud
+import app.dataservice.interfaces.CameraService
+import org.springframework.data.domain.PageRequest
+import org.springframework.data.domain.Sort
+import org.springframework.stereotype.Service
+import reactor.core.publisher.Flux
+import reactor.core.publisher.Mono
+
+@Service
+class CameraServiceImpl(
+    val cameraCrud: CameraCrud
+) :
+    CameraService {
+    override fun createCamera(camera: CameraBoundary): Mono<CameraBoundary> {
+        val emails = camera.emails
+        if (!emails.isNullOrEmpty()) {
+            for (email in emails) {
+                if (!isValidEmail(email)) {
+                    return Mono.error(BadRequestException400("Invalid email: $email"))
+                }
+            }
+        }
+
+
+        return Mono.just(camera)
+            .flatMap {
+                if (camera.name.isNullOrBlank())
+                    Mono.error(BadRequestException400("Name is missing"))
+                else if (camera.location.isNullOrBlank())
+                    Mono.error(BadRequestException400("Location is missing"))
+                else {
+                    it.id = null
+
+                    Mono.just(camera)
+                }
+            }
+            .map { camera.toEntity() }
+            .flatMap {
+                it.isActive = false
+                it.alertCount = 0
+                it.status = "offline"
+                it.lastActivity = ""
+
+                cameraCrud.save(it)
+            }
+            .map { CameraBoundary(it) }
+            .log()
+    }
+
+    override fun updateCamera(
+        id: String,
+        camera: CameraBoundary
+    ): Mono<Void> {
+        val emails = camera.emails
+        if (!emails.isNullOrEmpty()) {
+            for (email in emails) {
+                if (!isValidEmail(email)) {
+                    return Mono.error(BadRequestException400("Invalid email: $email"))
+                }
+            }
+        }
+
+        return cameraCrud
+            .findById(id)
+            .switchIfEmpty(Mono.error(BadRequestException400("Camera with the id: $id not found")))
+            .flatMap {
+                if (!camera.name.isNullOrBlank())
+                    it.name = camera.name
+
+                if (!camera.emails.isNullOrEmpty())
+                    it.emails = camera.emails
+
+                if (!camera.location.isNullOrBlank())
+                    it.location = camera.location
+
+                if (camera.isActive != null)
+                    it.isActive = camera.isActive
+
+                if (camera.status != null)
+                    it.status = camera.status
+
+                cameraCrud.save(it)
+            }
+            .then()
+            .log()
+    }
+
+    override fun getCameraById(id: String): Mono<CameraBoundary> {
+        return cameraCrud
+            .findById(id)
+            .switchIfEmpty(Mono.error(BadRequestException400("Camera with id $id not found")))
+            .map { CameraBoundary(it) }
+            .log()
+    }
+
+    override fun getCamerasPage(
+        page: Int,
+        size: Int
+    ): Flux<CameraBoundary> {
+        if (page < 0 || size < 1)
+            return Flux.empty()
+
+        return cameraCrud
+            .findAllByIdNotNull(PageRequest.of(page, size, Sort.Direction.ASC, "name"))
+            .map { CameraBoundary(it) }
+            .log()
+    }
+
+    override fun getCamerasByEmail(
+        email: String,
+        page: Int,
+        size: Int
+    ): Flux<CameraBoundary> {
+        if (page < 0 || size < 1)
+            return Flux.empty()
+
+        if (!isValidEmail(email))
+            return Flux.error(BadRequestException400("Invalid email: $email"))
+
+        return cameraCrud
+            .findByEmailsContaining(email, PageRequest.of(page, size, Sort.Direction.ASC, "name"))
+            .map { CameraBoundary(it) }
+            .log()
+    }
+
+    override fun deleteCamera(id: String): Mono<Void> {
+        return cameraCrud
+            .deleteById(id)
+            .log()
+    }
+
+    override fun deleteAll(): Mono<Void> {
+        return cameraCrud
+            .deleteAll()
+    }
+
+    fun isValidEmail(email: String?): Boolean {
+        if (email.isNullOrBlank())
+            return false
+
+        val emailRegex = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$"
+        return Regex(emailRegex).matches(email)
+    }
+}

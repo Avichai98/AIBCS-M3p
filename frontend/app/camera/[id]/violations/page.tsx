@@ -14,10 +14,13 @@ import { apiService } from "@/lib/api"
 
 interface VehicleBoundary {
   id: string
+  cameraId: string
   type: string
-  model: string
   manufacturer: string
-  color: string
+  color: String
+  typeProb: number
+  manufacturerProb: number
+  colorProb: number
   imageUrl: string
   description: string
   timestamp: string
@@ -28,6 +31,7 @@ interface VehicleBoundary {
 
 interface Alert {
   id: string
+  cameraId: string
   type: string
   severity: "Low" | "Medium" | "High" | "Critical"
   description: string
@@ -62,8 +66,8 @@ export default function ViolationsPage() {
         ])
 
         setCamera(cameraData)
-        setAlerts(alertsData.alerts)
-        setFilteredAlerts(alertsData.alerts)
+        setAlerts(alertsData)
+        setFilteredAlerts(alertsData)
       } catch (error) {
         console.error("Failed to load violations data:", error)
         // Handle error
@@ -77,13 +81,9 @@ export default function ViolationsPage() {
   useEffect(() => {
     const loadFilteredAlerts = async () => {
       try {
-        const alertsData = await apiService.getAlerts(params.id as string, {
-          severity: severityFilter !== "all" ? severityFilter : undefined,
-          type: typeFilter !== "all" ? typeFilter : undefined,
-          search: searchTerm || undefined,
-        })
+        const alertsData = await apiService.getAlerts(params.id as string)
 
-        setFilteredAlerts(alertsData.alerts)
+        setFilteredAlerts(alertsData)
       } catch (error) {
         console.error("Failed to filter alerts:", error)
       }
@@ -311,10 +311,6 @@ export default function ViolationsPage() {
                       <div>
                         <span className="text-gray-600">Make:</span>
                         <span className="ml-2 font-medium">{alert.vehicleBoundary.manufacturer}</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-600">Model:</span>
-                        <span className="ml-2 font-medium">{alert.vehicleBoundary.model}</span>
                       </div>
                       <div>
                         <span className="text-gray-600">Color:</span>

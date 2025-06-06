@@ -10,6 +10,7 @@ interface AlertService {
     fun getAlertsPage(page: Int, size: Int): Flux<AlertBoundary>
     fun getAlertsByVehicle(id: String, page: Int, size: Int): Flux<AlertBoundary>
     fun getAlertsByTimestampAfter(timestampStr: String, page: Int, size: Int): Flux<AlertBoundary>
+    fun getAlertsByCameraId(cameraId: String, page: Int, size: Int): Flux<AlertBoundary>
     fun deleteAlert(id: String): Mono<Void>
     fun deleteAll(): Mono<Void>
 }

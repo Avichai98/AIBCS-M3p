@@ -13,6 +13,7 @@ import { apiService } from "@/lib/api"
 interface CameraType {
   id: string
   name: string
+  emails: string[]
   location: string
   alertCount: number
   isActive: boolean
@@ -30,6 +31,7 @@ export default function Dashboard() {
       try {
         // Check authentication
         const userData = localStorage.getItem("user")
+        console.log("📦 User data from localStorage:", userData)
         if (!userData) {
           router.push("/")
           return
@@ -37,7 +39,9 @@ export default function Dashboard() {
         setUser(JSON.parse(userData))
 
         // Load cameras and stats from backend
-        const [camerasData, statsData] = await Promise.all([apiService.getCameras(), apiService.getDashboardStats()])
+        const [camerasData, /*statsData*/] = await Promise.all([apiService.getCameras(JSON.parse(userData).email), /*apiService.getDashboardStats()*/])
+        
+        console.log("📷 Fetched cameras data:", camerasData)
 
         setCameras(camerasData)
         // You can use statsData for the overview cards if needed
