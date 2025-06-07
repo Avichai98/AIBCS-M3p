@@ -27,6 +27,7 @@ sys.path.append(
     os.path.join(os.path.dirname(__file__), "Damaged-Car-parts-prediction-Model")
 )
 from car_parts import set_detection
+import base64
 
 start_flag = 0
 models = {}
@@ -36,6 +37,11 @@ app = FastAPI(
     redoc_url="/redoc",  # ReDoc UI (default: /redoc)
     openapi_url="/openapi.json",  # OpenAPI schema path (default: /openapi.json)
 )
+
+
+def encode_image_to_base64(image):
+    _, buffer = cv2.imencode(".png", image)
+    return base64.b64encode(buffer).decode("utf-8")
 
 
 @app.get("/build")
@@ -107,8 +113,26 @@ async def process_image(file: UploadFile = File(...)):
                 raise HTTPException(
                     status_code=500, detail="Car damage detection failed."
                 )
-            combined_result = (vehicle, car_damage_results)
-            full_list.append(combined_result)
+            v = {
+                "id": 0,
+                "type": vehicle.get("object"),
+                "manufacturer": vehicle.get("make"),
+                "color": vehicle.get("color"),
+                "type_prob": float(vehicle.get("object_prob", 0)),
+                "manufacturer_prob": float(vehicle.get("make_prob", 0)),
+                "color_prob": float(vehicle.get("color_prob", 0)),
+                "image": encode_image_to_base64(car_img),
+                "timestamp": 0,
+                "top": int(rect["top"]),
+                "left": int(rect["left"]),
+                "width": int(rect["width"]),
+                "height": int(rect["height"]),
+                "latitude": round(float(rect["top"]) + (float(rect["height"]) / 2), 3),
+                "longitude": round(float(rect["left"]) + (float(rect["width"]) / 2), 3),
+                "details": car_damage_results,
+            }
+            # combined_result = (vehicle, car_damage_results)
+            full_list.append(v)
         # Draw bounding boxes and probabilities on the image
         for vehicle in vehicle_results:
             rect = vehicle.get("rect")
