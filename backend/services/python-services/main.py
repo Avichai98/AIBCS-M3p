@@ -129,7 +129,7 @@ async def process_image(file: UploadFile = File(...)):
                 "height": int(rect["height"]),
                 "latitude": round(float(rect["top"]) + (float(rect["height"]) / 2), 3),
                 "longitude": round(float(rect["left"]) + (float(rect["width"]) / 2), 3),
-                "details": car_damage_results,
+                "details": str(car_damage_results),
             }
             # combined_result = (vehicle, car_damage_results)
             full_list.append(v)
