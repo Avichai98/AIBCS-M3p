@@ -1,7 +1,9 @@
 package app.dataservice.controllers
 
 import app.dataservice.boundaries.CameraBoundary
+import app.dataservice.boundaries.CameraSchedule
 import app.dataservice.interfaces.CameraService
+import app.dataservice.scheduling.CameraScheduler
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
@@ -18,7 +20,8 @@ import reactor.core.publisher.Mono
 @RestController
 @RequestMapping("/cameras")
 class CameraController(
-    val cameraService: CameraService
+    val cameraService: CameraService,
+    val cameraScheduler: CameraScheduler
 ) {
     @PostMapping(
         path = ["/create"],
@@ -42,6 +45,25 @@ class CameraController(
     ): Mono<Void> {
         return this.cameraService
             .updateCamera(id, camera)
+    }
+
+    @PutMapping("/schedule/{id}")
+    fun updateCameraSchedule(
+        @PathVariable id: String,
+        @RequestBody schedule: CameraSchedule
+    ): Mono<Void> {
+        return cameraService
+            .updateCameraSchedule(id, schedule)
+            .doOnSuccess {
+                // Once saved, also trigger rescheduling
+                cameraScheduler.scheduleCamera(id, schedule)
+            }
+    }
+
+    @GetMapping("/schedule/{id}")
+    fun getCameraSchedule(@PathVariable id: String): Mono<CameraSchedule> {
+        return cameraService
+            .getCameraSchedule(id)
     }
 
     @GetMapping(

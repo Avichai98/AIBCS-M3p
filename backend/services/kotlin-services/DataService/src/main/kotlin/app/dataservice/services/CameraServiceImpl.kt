@@ -1,7 +1,9 @@
 package app.dataservice.services
 
 import app.dataservice.boundaries.CameraBoundary
+import app.dataservice.boundaries.CameraSchedule
 import app.dataservice.exceptions.BadRequestException400
+import app.dataservice.exceptions.NotFoundException404
 import app.dataservice.interfaces.CameraCrud
 import app.dataservice.interfaces.CameraService
 import org.springframework.data.domain.PageRequest
@@ -25,7 +27,6 @@ class CameraServiceImpl(
             }
         }
 
-
         return Mono.just(camera)
             .flatMap {
                 if (camera.name.isNullOrBlank())
@@ -44,6 +45,11 @@ class CameraServiceImpl(
                 it.alertCount = 0
                 it.status = "offline"
                 it.lastActivity = ""
+
+                it.schedule?.days = emptyList()
+                it.schedule?.startTime = "00:00"
+                it.schedule?.endTime = "00:00"
+                it.schedule?.enabled = false
 
                 cameraCrud.save(it)
             }
@@ -66,7 +72,7 @@ class CameraServiceImpl(
 
         return cameraCrud
             .findById(id)
-            .switchIfEmpty(Mono.error(BadRequestException400("Camera with the id: $id not found")))
+            .switchIfEmpty(Mono.error(NotFoundException404("Camera with the id: $id not found")))
             .flatMap {
                 if (!camera.name.isNullOrBlank())
                     it.name = camera.name
@@ -89,10 +95,40 @@ class CameraServiceImpl(
             .log()
     }
 
+    override fun updateCameraSchedule(
+        id: String,
+        schedule: CameraSchedule
+    ): Mono<Void> {
+        return cameraCrud
+            .findById(id)
+            .switchIfEmpty(Mono.error(NotFoundException404("Camera with id $id not found")))
+            .flatMap {
+                it.schedule = schedule
+                cameraCrud.save(it)
+            }
+            .then()
+            .log()
+    }
+
+    override fun getCameraSchedule(id: String): Mono<CameraSchedule> {
+        return cameraCrud.findById(id)
+            .switchIfEmpty(Mono.error(NotFoundException404("Camera with id $id not found")))
+            .map {
+                it.schedule ?: CameraSchedule(false, emptyList(), "00:00", "00:00")
+            }
+    }
+
+    override fun getAllCameraSchedules(): Flux<Pair<String, CameraSchedule>> {
+        return cameraCrud.findAll()
+            .filter { it.schedule != null && it.schedule!!.enabled == true }
+            .map { camera -> (camera.id to camera.schedule!!) as Pair<String, CameraSchedule>? }
+    }
+
+
     override fun getCameraById(id: String): Mono<CameraBoundary> {
         return cameraCrud
             .findById(id)
-            .switchIfEmpty(Mono.error(BadRequestException400("Camera with id $id not found")))
+            .switchIfEmpty(Mono.error(NotFoundException404("Camera with id $id not found")))
             .map { CameraBoundary(it) }
             .log()
     }

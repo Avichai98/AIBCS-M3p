@@ -1,5 +1,6 @@
 package app.dataservice.entities
 
+import app.dataservice.boundaries.CameraSchedule
 import org.springframework.data.annotation.Id
 import org.springframework.data.mongodb.core.mapping.Document
 
@@ -12,9 +13,10 @@ class CameraEntity(
     var alertCount: Int?,
     var isActive: Boolean?,
     var status: String?,
-    var lastActivity: String?
+    var lastActivity: String?,
+    var schedule: CameraSchedule?
 ) {
-    constructor() : this(null, null, null, null, null, null, null, null)
+    constructor() : this(null, null, null, null, null, null, null, null, null)
 
     override fun toString(): String {
         return "CameraEntity(" +
@@ -26,6 +28,7 @@ class CameraEntity(
                 " isActive=$isActive" +
                 " status=$status" +
                 " lastActivity=$lastActivity" +
+                " schedule=$schedule" +
                 ")"
     }
 }

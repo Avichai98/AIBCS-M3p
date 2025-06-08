@@ -10,9 +10,10 @@ class CameraBoundary(
     var alertCount: Int?,
     var isActive: Boolean?,
     var status: String?,
-    var lastActivity: String?
+    var lastActivity: String?,
+    var schedule: CameraSchedule?
 ) {
-    constructor() : this(null, null, null, null, null, null, null, null)
+    constructor() : this(null, null, null, null, null, null, null, null, null)
 
     constructor(cameraEntity: CameraEntity) : this() {
         this.id = cameraEntity.id
@@ -23,6 +24,7 @@ class CameraBoundary(
         this.isActive = cameraEntity.isActive
         this.status = cameraEntity.status
         this.lastActivity = cameraEntity.lastActivity
+        this.schedule = cameraEntity.schedule
     }
 
     fun toEntity(): CameraEntity {
@@ -36,6 +38,7 @@ class CameraBoundary(
         cameraEntity.isActive = isActive
         cameraEntity.status = status
         cameraEntity.lastActivity = lastActivity
+        cameraEntity.schedule = schedule
 
         return cameraEntity
     }
@@ -50,6 +53,7 @@ class CameraBoundary(
                 " isActive=$isActive," +
                 " status=$status," +
                 " lastActivity=$lastActivity" +
+                " schedule=$schedule" +
                 ")"
     }
 }

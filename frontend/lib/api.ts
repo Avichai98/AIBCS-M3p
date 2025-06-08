@@ -128,14 +128,14 @@ class ApiService {
   }
 
   async updateCameraSchedule(id: string, schedule: CameraSchedule): Promise<void> {
-    return this.request(`/cameras/${id}/schedule`, {
+    return this.request(`/cameras/schedule/${id}`, {
       method: "PUT",
       body: JSON.stringify(schedule),
     })
   }
 
   async getCameraSchedule(id: string): Promise<CameraSchedule> {
-    return this.request(`/cameras/${id}/schedule`)
+    return this.request(`/cameras/schedule/${id}`)
   }
 
   // Alerts/Violations
