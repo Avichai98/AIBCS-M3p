@@ -4,7 +4,6 @@ import os
 import cv2
 import numpy as np
 import threading
-import uvicorn
 import time
 from datetime import datetime
 from PIL import Image
@@ -208,7 +207,3 @@ def work():
             camera_name["name"], camera_name["name"]
         )
         time.sleep(1)
-
-
-if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=8082)
