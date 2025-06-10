@@ -7,3 +7,4 @@ pydantic==2.11.5
 ultralytics==8.3.102
 uvicorn==0.34.3
 python-multipart
+httpx

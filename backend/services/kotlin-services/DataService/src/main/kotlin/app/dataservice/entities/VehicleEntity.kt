@@ -12,15 +12,15 @@ class VehicleEntity (
     var model: String?,
     var manufacturer: String?,
     var color: String?,
-    var typeProb: Double?,
-    var manufacturerProb: Double?,
-    var colorProb: Double?,
+    var typeProb: Float?,
+    var manufacturerProb: Float?,
+    var colorProb: Float?,
     var imageUrl: String?,
     var description: String?,
     var timestamp: Date?,
     var stayDuration: Long?,
-    var latitude: Double?,
-    var longitude: Double?
+    var latitude: Float?,
+    var longitude: Float?
 ) {
     constructor(): this(null ,null, null, null,null, null, null,null, null, null, null, null, null, null, null)
 

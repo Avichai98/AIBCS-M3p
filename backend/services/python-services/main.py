@@ -8,6 +8,7 @@ import time
 from datetime import datetime
 from PIL import Image
 import io
+import httpx
 
 sys.path.append(
     os.path.join(
@@ -114,22 +115,28 @@ async def process_image(file: UploadFile = File(...)):
                 )
             v = {
                 "id": 0,
-                "type": vehicle.get("object"),
-                "manufacturer": vehicle.get("make"),
-                "color": vehicle.get("color"),
-                "type_prob": float(vehicle.get("object_prob", 0)),
-                "manufacturer_prob": float(vehicle.get("make_prob", 0)),
-                "color_prob": float(vehicle.get("color_prob", 0)),
-                "image": encode_image_to_base64(car_img),
+                "cameraId": "camera_1",
+                "type": str(vehicle.get("object")),
+                "manufacturer": str(vehicle.get("make")),
+                "color": str(vehicle.get("color")),
+                "typeProb": float(vehicle.get("object_prob", 0)),
+                "manufacturerProb": float(vehicle.get("make_prob", 0)),
+                "colorProb": float(vehicle.get("color_prob", 0)),
+                "imageUrl": "none",#str(encode_image_to_base64(car_img)),
+                "description": str(car_damage_results),
                 "timestamp": 0,
-                "top": int(rect["top"]),
-                "left": int(rect["left"]),
-                "width": int(rect["width"]),
-                "height": int(rect["height"]),
+                "stayDuration": 0,
+              #  "top": int(rect["top"]),
+              #  "left": int(rect["left"]),
+              #  "width": int(rect["width"]),
+              #  "height": int(rect["height"]),
                 "latitude": round(float(rect["top"]) + (float(rect["height"]) / 2), 3),
-                "longitude": round(float(rect["left"]) + (float(rect["width"]) / 2), 3),
-                "details": str(car_damage_results),
+                "longitude": round(float(rect["left"]) + (float(rect["width"]) / 2), 3)
             }
+
+            # Create a vehicle in a database
+            await create_vehicle(v)
+
             # combined_result = (vehicle, car_damage_results)
             full_list.append(v)
         # Draw bounding boxes and probabilities on the image
@@ -207,3 +214,15 @@ def work():
             camera_name["name"], camera_name["name"]
         )
         time.sleep(1)
+
+
+
+async def create_vehicle(v):
+    url = "http://data-management-service:8080/vehicles/create"
+    print(v)
+    async with httpx.AsyncClient() as client:
+        response = await client.post(url, json=v)
+        if response.status_code != 200:
+            print(f"Failed to create vehicle: {response.text}")
+            raise HTTPException(status_code=500, detail="Failed to create vehicle in database.")
+    return response.json()
