@@ -148,6 +148,21 @@ class CameraServiceImpl(
             .log()
     }
 
+    override fun updateCameraStatus(
+        id: String,
+        status: Boolean
+    ): Mono<Void> {
+        return cameraCrud
+            .findById(id)
+            .switchIfEmpty(Mono.error(NotFoundException404("Camera with id $id not found")))
+            .flatMap {
+                it.isActive = status
+                cameraCrud.save(it)
+            }
+            .then()
+            .log()
+    }
+
     override fun getCameraSchedule(id: String): Mono<CameraSchedule> {
         return cameraCrud.findById(id)
             .switchIfEmpty(Mono.error(NotFoundException404("Camera with id $id not found")))

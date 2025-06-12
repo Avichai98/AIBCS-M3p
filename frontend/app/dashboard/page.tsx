@@ -60,18 +60,24 @@ export default function Dashboard() {
   }
 
   const toggleCamera = async (cameraId: string) => {
-    try {
-      const camera = cameras.find((c) => c.id === cameraId)
-      if (!camera) return
+  try {
+    const camera = cameras.find((c) => c.id === cameraId)
+    if (!camera) return
 
-      const updatedCamera = await apiService.updateCameraStatus(cameraId, !camera.isActive)
+    await apiService.updateCameraStatus(cameraId, !camera.isActive)
 
-      setCameras((prev) => prev.map((cam) => (cam.id === cameraId ? updatedCamera : cam)))
-    } catch (error) {
-      console.error("Failed to toggle camera:", error)
-      // Handle error - maybe show a toast notification
-    }
+    // Optimistically update the camera state
+    setCameras((prev) =>
+      prev.map((cam) =>
+        cam.id === cameraId ? { ...cam, isActive: !cam.isActive } : cam
+      )
+    )
+  } catch (error) {
+    console.error("Failed to toggle camera:", error)
+    // Handle error - maybe show a toast notification
   }
+}
+
 
   const getStatusColor = (status: string) => {
     switch (status) {

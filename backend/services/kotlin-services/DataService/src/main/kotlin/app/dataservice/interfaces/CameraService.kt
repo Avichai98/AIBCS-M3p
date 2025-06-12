@@ -11,6 +11,7 @@ interface CameraService {
     fun stopCamera(): Mono<Void>
     fun updateCamera(id: String, camera: CameraBoundary): Mono<Void>
     fun updateCameraSchedule(id: String, schedule: CameraSchedule): Mono<Void>
+    fun updateCameraStatus(id: String, status: Boolean): Mono<Void>
     fun getCameraSchedule(id: String): Mono<CameraSchedule>
     fun getAllCameraSchedules(): Flux<Pair<String, CameraSchedule>>
     fun getCameraById(id: String): Mono<CameraBoundary>

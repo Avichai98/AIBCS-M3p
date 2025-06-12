@@ -78,6 +78,18 @@ class CameraController(
             }
     }
 
+    @PutMapping(
+        path = ["/status/{id}"],
+        consumes = [MediaType.APPLICATION_JSON_VALUE]
+    )
+    fun updateCameraStatus(
+        @PathVariable id: String,
+        @RequestBody status: Boolean
+    ): Mono<Void> {
+        return this.cameraService
+            .updateCameraStatus(id, status)
+    }
+
     @GetMapping("/schedule/{id}")
     fun getCameraSchedule(@PathVariable id: String): Mono<CameraSchedule> {
         return cameraService
