@@ -6,9 +6,12 @@ import app.dataservice.exceptions.BadRequestException400
 import app.dataservice.exceptions.NotFoundException404
 import app.dataservice.interfaces.CameraCrud
 import app.dataservice.interfaces.CameraService
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
+import org.springframework.http.MediaType
 import org.springframework.stereotype.Service
+import org.springframework.web.reactive.function.client.WebClient
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 
@@ -17,6 +20,13 @@ class CameraServiceImpl(
     val cameraCrud: CameraCrud
 ) :
     CameraService {
+    lateinit var dataServiceUrl: String
+    lateinit var webClient: WebClient
+
+    @Value("\${remote.python.service.url: http://car-detection-service:5000}")
+    fun setRemoteUrl(url: String) {
+        this.dataServiceUrl = url
+    }
     override fun createCamera(camera: CameraBoundary): Mono<CameraBoundary> {
         val emails = camera.emails
         if (!emails.isNullOrEmpty()) {
@@ -54,6 +64,34 @@ class CameraServiceImpl(
                 cameraCrud.save(it)
             }
             .map { CameraBoundary(it) }
+            .log()
+    }
+
+    override fun startCamera(): Mono<Void> {
+        return webClient
+            .post()
+            .uri("start")
+            .accept(MediaType.APPLICATION_JSON)
+            .retrieve()
+            .bodyToMono(Void::class.java)
+            .doOnSuccess { println("📸 Camera start response: $it") }
+            .onErrorResume { e ->
+                Mono.error(BadRequestException400("Camera start failed: ${e.message}"))
+            }
+            .log()
+    }
+
+    override fun stopCamera(): Mono<Void> {
+        return webClient
+            .post()
+            .uri("stop")
+            .accept(MediaType.APPLICATION_JSON)
+            .retrieve()
+            .bodyToMono(Void::class.java)
+            .doOnSuccess { println("📸 Camera stop response: $it") }
+            .onErrorResume { e ->
+                Mono.error(BadRequestException400("Camera stop failed: ${e.message}"))
+            }
             .log()
     }
 
@@ -160,6 +198,20 @@ class CameraServiceImpl(
         return cameraCrud
             .findByEmailsContaining(email, PageRequest.of(page, size, Sort.Direction.ASC, "name"))
             .map { CameraBoundary(it) }
+            .log()
+    }
+
+    override fun buildCamera(): Mono<Void> {
+        return this.webClient
+            .get()
+            .uri("/build")
+            .retrieve()
+            .bodyToMono(String::class.java)
+            .doOnSuccess { println("🚀 Camera build response: $it") }
+            .onErrorResume { e ->
+                Mono.error(BadRequestException400("Camera build failed: ${e.message}"))
+            }
+            .then()
             .log()
     }
 

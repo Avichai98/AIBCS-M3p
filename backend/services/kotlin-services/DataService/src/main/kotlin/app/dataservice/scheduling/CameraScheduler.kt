@@ -3,8 +3,12 @@ package app.dataservice.scheduling
 import app.dataservice.boundaries.CameraSchedule
 import app.dataservice.interfaces.CameraService
 import jakarta.annotation.PostConstruct
+import org.springframework.beans.factory.annotation.Value
+import org.springframework.http.MediaType
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import org.springframework.stereotype.Service
+import org.springframework.web.reactive.function.client.WebClient
+import reactor.core.publisher.Mono
 import java.time.*
 import java.util.Date
 import java.util.concurrent.ScheduledFuture
@@ -13,9 +17,16 @@ import java.util.concurrent.ScheduledFuture
 class CameraScheduler(
     private val cameraService: CameraService
 ) {
-
     private val scheduler = ThreadPoolTaskScheduler().apply { initialize() }
     private val tasks = mutableMapOf<String, ScheduledFuture<*>>()
+
+    lateinit var dataServiceUrl: String
+    lateinit var webClient: WebClient
+
+    @Value("\${remote.python.service.url: http://car-detection-service:5000}")
+    fun setRemoteUrl(url: String) {
+        this.dataServiceUrl = url
+    }
 
     @PostConstruct
     fun initSchedules() {
@@ -59,12 +70,12 @@ class CameraScheduler(
 
             val startTask = scheduler.schedule({
                 println("▶️ Starting camera $cameraId at ${Date.from(startInstant)}")
-                activateCamera(cameraId)
+                activateCamera(cameraId).subscribe()
             }, Date.from(startInstant))
 
             val stopTask = scheduler.schedule({
                 println("⏹️ Stopping camera $cameraId at ${Date.from(endInstant)}")
-                deactivateCamera(cameraId)
+                deactivateCamera(cameraId).subscribe()
             }, Date.from(endInstant))
 
             tasks[cameraId] = startTask
@@ -75,7 +86,6 @@ class CameraScheduler(
     }
 
 
-
     private fun cancelExistingSchedule(cameraId: String) {
         tasks[cameraId]?.cancel(false)
         tasks["stop-$cameraId"]?.cancel(false)
@@ -83,13 +93,37 @@ class CameraScheduler(
         tasks.remove("stop-$cameraId")
     }
 
-    fun activateCamera(cameraId: String) {
+    fun activateCamera(cameraId: String): Mono<Void> {
         println("🚀 Camera $cameraId ACTIVATED")
-        // TODO: קריאה ל־AI-Service (או משהו אחר)
+
+        return webClient
+            .get()
+            .uri("/build")
+            .retrieve()
+            .bodyToMono(String::class.java)
+            .doOnSuccess { println("📸 Camera $cameraId build response: $it") }
+            .then(
+                webClient.post()
+                    .uri("/start")
+                    .accept(MediaType.APPLICATION_JSON)
+                    .retrieve()
+                    .bodyToMono(String::class.java)
+                    .doOnSuccess { println("📸 Camera $cameraId start response: $it") }
+                    .doOnError { e -> println("❌ Error starting camera $cameraId: ${e.message}") }
+            )
+            .then()
     }
 
-    fun deactivateCamera(cameraId: String) {
+    fun deactivateCamera(cameraId: String): Mono<Void> {
         println("🛑 Camera $cameraId DEACTIVATED")
-        // TODO: קריאה ל־AI-Service (או משהו אחר)
+
+        return webClient.post()
+            .uri("/stop")
+            .accept(MediaType.APPLICATION_JSON)
+            .retrieve()
+            .bodyToMono(String::class.java)
+            .doOnSuccess { println("📸 Camera $cameraId stop response: $it") }
+            .doOnError { e -> println("❌ Error stopping camera $cameraId: ${e.message}") }
+            .then()
     }
 }

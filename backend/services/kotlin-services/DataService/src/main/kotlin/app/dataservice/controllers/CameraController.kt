@@ -35,6 +35,24 @@ class CameraController(
             .createCamera(camera)
     }
 
+    @PostMapping(
+        path = ["/start"],
+        produces = [MediaType.APPLICATION_JSON_VALUE],
+    )
+    fun startCamera(): Mono<Void> {
+        return this.cameraService
+            .startCamera()
+    }
+
+    @PostMapping(
+        path = ["/stop"],
+        produces = [MediaType.APPLICATION_JSON_VALUE],
+    )
+    fun stopCamera(): Mono<Void> {
+        return this.cameraService
+            .stopCamera()
+    }
+
     @PutMapping(
         path = ["/update/{id}"],
         consumes = [MediaType.APPLICATION_JSON_VALUE],
@@ -98,9 +116,18 @@ class CameraController(
         @RequestParam(name = "page", required = false, defaultValue = "0") page: Int,
         @RequestParam(name = "size", required = false, defaultValue = "20") size: Int
     ):
-    Flux<CameraBoundary> {
+            Flux<CameraBoundary> {
         return this.cameraService
             .getCamerasByEmail(email, page, size)
+    }
+
+    @GetMapping(
+        path = ["/build"],
+        produces = [MediaType.APPLICATION_JSON_VALUE]
+    )
+    fun buildCamera(): Mono<Void> {
+        return this.cameraService
+            .buildCamera()
     }
 
     @DeleteMapping(

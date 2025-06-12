@@ -115,7 +115,7 @@ async def process_image(file: UploadFile = File(...)):
                 )
             v = {
                 "id": 0,
-                "cameraId": "camera_1",
+                "cameraId": "684928ac8c23717f386e8191",
                 "type": str(vehicle.get("object")),
                 "manufacturer": str(vehicle.get("make")),
                 "color": str(vehicle.get("color")),
