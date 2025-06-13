@@ -62,40 +62,48 @@ export interface User {
 
 // API Service Class
 class ApiService {
-  private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-    const url = `${API_BASE_URL}${endpoint}`
+  private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T | null> {
+  const url = `${API_BASE_URL}${endpoint}`;
 
-    // Get auth token from localStorage (adjust based on your auth strategy)
-    const token = localStorage.getItem("authToken")
+  const token = localStorage.getItem("authToken");
 
-    const config: RequestInit = {
-      headers: {
-        "Content-Type": "application/json",
-        ...(token && { Authorization: `Bearer ${token}` }),
-        ...options.headers,
-      },
-      ...options,
-    }
+  const config: RequestInit = {
+    headers: {
+      "Content-Type": "application/json",
+      ...(token && { Authorization: `Bearer ${token}` }),
+      ...options.headers,
+    },
+    ...options,
+  };
 
-    try {
-      const response = await fetch(url, config)
-      if (!response.ok) {
-        if (response.status === 401) {
-          // Handle unauthorized - redirect to login
-          localStorage.removeItem("authToken")
-          localStorage.removeItem("user")
-          window.location.href = "/"
-          throw new Error("Unauthorized")
-        }
-        throw new Error(`HTTP error! status: ${response.status}`)
+  try {
+    const response = await fetch(url, config);
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        localStorage.removeItem("authToken");
+        localStorage.removeItem("user");
+        window.location.href = "/";
+        throw new Error("Unauthorized");
       }
-
-      return await response.json()
-    } catch (error) {
-      console.error("API request failed:", error)
-      throw error
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
+    
+    // Handle empty response
+    const text = await response.text();
+
+    if (!text) {
+      return null;
+    }
+
+    return JSON.parse(text) as T;
+
+  } catch (error) {
+    console.error("API request failed:", error);
+    throw error;
   }
+}
+
 
   // Authentication
   async login(credentials: LoginCredentials): Promise<{ user: User; token: string }> {
@@ -120,10 +128,10 @@ class ApiService {
     return this.request(`/cameras/getCameraById/${id}`)
   }
 
-  async updateCameraStatus(id: string, isActive: boolean): Promise<Camera> {
-    return this.request(`/cameras/${id}/status`, {
+  async updateCameraStatus(id: string, isActive: boolean): Promise<void> {
+    return this.request(`/cameras/status/${id}`, {
       method: "PUT",
-      body: JSON.stringify({ isActive }),
+      body: JSON.stringify(isActive),
     })
   }
 
