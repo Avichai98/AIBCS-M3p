@@ -1,6 +1,9 @@
 package app.dataservice.services
 
+import app.dataservice.boundaries.LoginBoundary
+import app.dataservice.boundaries.LoginResponse
 import app.dataservice.boundaries.UserBoundary
+import app.dataservice.config.JwtUtil
 import app.dataservice.exceptions.BadRequestException400
 import app.dataservice.exceptions.NotFoundException404
 import app.dataservice.interfaces.UserCrud
@@ -14,15 +17,17 @@ import java.util.Date
 
 @Service
 class UserServiceImpl(
-    val userCrud: UserCrud
-):
+    val userCrud: UserCrud,
+    val jwtUtil: JwtUtil
+) :
     UserService {
     override fun createUser(user: UserBoundary): Mono<UserBoundary> {
         return Mono.just(user)
             .flatMap {
                 if (user.firstName.isNullOrBlank() || user.lastName.isNullOrBlank() || user.mobile.isNullOrBlank()
-                    || user.username.isNullOrBlank())
-                    Mono.error (BadRequestException400("Required fields are missing"))
+                    || user.username.isNullOrBlank()
+                )
+                    Mono.error(BadRequestException400("Required fields are missing"))
                 else if (!isValidEmail(user.email))
                     Mono.error(BadRequestException400("Invalid email"))
                 else {
@@ -63,7 +68,7 @@ class UserServiceImpl(
     override fun getUserById(id: String): Mono<UserBoundary> {
         return userCrud
             .findById(id)
-            .switchIfEmpty (Mono.error(NotFoundException404("User with id $id not found")))
+            .switchIfEmpty(Mono.error(NotFoundException404("User with id $id not found")))
             .map { UserBoundary(it) }
             .log()
     }
@@ -80,9 +85,9 @@ class UserServiceImpl(
         page: Int,
         size: Int
     ): Flux<UserBoundary> {
-        if(page < 0 || size < 1)
+        if (page < 0 || size < 1)
             return Flux.empty()
-        
+
         return userCrud
             .findAllByIdNotNull(PageRequest.of(page, size, Sort.Direction.ASC, "username"))
             .map { UserBoundary(it) }
@@ -99,6 +104,24 @@ class UserServiceImpl(
 
     override fun deleteAll(): Mono<Void> {
         return userCrud.deleteAll()
+    }
+
+    override fun login(login: LoginBoundary): Mono<LoginResponse> {
+        System.err.println("***** UserServiceImpl.login: User found with: email: ${login.email}, password: ${login.password}")
+        return userCrud
+            .findByEmail(login.email)
+            .switchIfEmpty(Mono.error(BadRequestException400("Invalid email or password")))
+            .flatMap { user ->
+                if (user.password != login.password) {
+                    System.err.println("***** UserServiceImpl.login: User found with email inside if")
+                    Mono.error(BadRequestException400("Invalid email or password"))
+                } else {
+                    System.err.println("***** UserServiceImpl.login: User found with email: ${user.email}")
+                    val token = jwtUtil.generateToken(user)
+                    val response = LoginResponse(UserBoundary(user), token)
+                    Mono.just(response)
+                }
+            }
     }
 
     fun isValidEmail(email: String?): Boolean {

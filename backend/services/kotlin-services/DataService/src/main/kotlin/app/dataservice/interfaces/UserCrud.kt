@@ -8,5 +8,5 @@ import reactor.core.publisher.Mono
 
 interface UserCrud : ReactiveMongoRepository<UserEntity, String> {
     fun findAllByIdNotNull(pageable: Pageable): Flux<UserEntity>
-    fun findByEmail(email: String): Mono<UserEntity>
+    fun findByEmail(email: String?): Mono<UserEntity>
 }
