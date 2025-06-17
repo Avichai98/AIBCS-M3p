@@ -1,0 +1,1 @@
+taken from https://github.com/suryaremanan/Damaged-Car-parts-prediction-using-YOLOv8
