@@ -20,11 +20,12 @@ class VehicleServiceImpl(
     override fun createVehicle(vehicle: VehicleBoundary): Mono<VehicleBoundary> {
         return Mono.just(vehicle)
             .flatMap {
-                if(vehicle.type.isNullOrBlank() || vehicle.imageUrl.isNullOrBlank()
+                if (vehicle.type.isNullOrBlank() || vehicle.imageUrl.isNullOrBlank()
                     || vehicle.description.isNullOrBlank() || vehicle.color.isNullOrBlank() || vehicle.latitude == null
-                    || vehicle.longitude == null)
-                    Mono.error (BadRequestException400("Required fields are missing"))
-                else{
+                    || vehicle.longitude == null || vehicle.cameraId.isNullOrBlank()
+                )
+                    Mono.error(BadRequestException400("Required fields are missing"))
+                else {
                     vehicle.id = null
                     vehicle.timestamp = Date()
                     vehicle.stayDuration = 0
@@ -46,14 +47,17 @@ class VehicleServiceImpl(
             .findById(id)
             .switchIfEmpty(Mono.error(NotFoundException404("User with the id: $id not found")))
             .flatMap {
-                if(!updatedVehicle.imageUrl.isNullOrBlank())
+                if (!updatedVehicle.imageUrl.isNullOrBlank())
                     it.imageUrl = updatedVehicle.imageUrl
 
-                if(updatedVehicle.latitude != null)
+                if (updatedVehicle.latitude != null)
                     it.latitude = updatedVehicle.latitude
 
-                if(updatedVehicle.longitude != null)
+                if (updatedVehicle.longitude != null)
                     it.longitude = updatedVehicle.longitude
+
+                if (updatedVehicle.cameraId != null)
+                    it.cameraId = updatedVehicle.cameraId
 
                 it.stayDuration = Date().time - it.timestamp!!.time
                 this.vehicleCrud.save(it)
@@ -65,7 +69,7 @@ class VehicleServiceImpl(
     override fun getVehicleById(id: String): Mono<VehicleBoundary> {
         return vehicleCrud
             .findById(id)
-            .switchIfEmpty (Mono.error(NotFoundException404("Vehicle with id $id not found")))
+            .switchIfEmpty(Mono.error(NotFoundException404("Vehicle with id $id not found")))
             .map { VehicleBoundary(it) }
             .log()
     }
@@ -74,7 +78,7 @@ class VehicleServiceImpl(
         page: Int,
         size: Int
     ): Flux<VehicleBoundary> {
-        if(page < 0 || size < 1)
+        if (page < 0 || size < 1)
             return Flux.empty()
 
         return vehicleCrud
@@ -101,7 +105,11 @@ class VehicleServiceImpl(
         size: Int
     ): Flux<VehicleBoundary> {
         return this.vehicleCrud
-            .findByLatitudeAndLongitude(latitude, longitude, PageRequest.of(page, size, Sort.Direction.ASC, "timestamp"))
+            .findByLatitudeAndLongitude(
+                latitude,
+                longitude,
+                PageRequest.of(page, size, Sort.Direction.ASC, "timestamp")
+            )
             .map { VehicleBoundary(it) }
             .log()
     }

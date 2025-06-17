@@ -1,0 +1,8 @@
+{
+    "python.analysis.extraPaths": [
+        "./services/python-services/face-bluring",
+        "./services/python-services/vehicle-recognition-api-yolov4-python-master",
+        "./services/python-services/image-capture",
+        "./services/python-services/Damaged-Car-parts-prediction-Model"
+    ]
+}

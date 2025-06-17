@@ -80,6 +80,19 @@ class AlertController(
             .getAlertsByTimestampAfter(timestampStr, page, size)
     }
 
+    @GetMapping(
+        path = ["/getAlertsByCamera/{cameraId}"],
+        produces = [MediaType.APPLICATION_JSON_VALUE, MediaType.TEXT_EVENT_STREAM_VALUE]
+    )
+    fun getAlertsByCamera(
+        @PathVariable cameraId: String,
+        @RequestParam(name = "page", required = false, defaultValue = "0") page: Int,
+        @RequestParam(name = "size", required = false, defaultValue = "20") size: Int
+    ): Flux<AlertBoundary>{
+        return this.alertService
+            .getAlertsByCameraId(cameraId, page, size)
+    }
+
     @DeleteMapping(
         path = ["/delete/{id}"]
     )

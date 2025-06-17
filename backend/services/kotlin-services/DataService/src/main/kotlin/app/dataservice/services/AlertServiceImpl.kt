@@ -5,6 +5,7 @@ import app.dataservice.exceptions.BadRequestException400
 import app.dataservice.exceptions.NotFoundException404
 import app.dataservice.interfaces.AlertCrud
 import app.dataservice.interfaces.AlertService
+import app.dataservice.interfaces.CameraCrud
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
@@ -15,7 +16,8 @@ import java.util.Date
 
 @Service
 class AlertServiceImpl(
-    val alertCrud: AlertCrud
+    val alertCrud: AlertCrud,
+    val cameraCrud: CameraCrud
 ):
     AlertService {
     override fun createAlert(alert: AlertBoundary): Mono<AlertBoundary> {
@@ -31,6 +33,16 @@ class AlertServiceImpl(
 
                     Mono.just(it)
                 }
+            }
+            .flatMap {
+                cameraCrud.findById(alert.cameraId!!)
+                    .switchIfEmpty(Mono.error(BadRequestException400("Camera with id ${alert.cameraId} not found")))
+                    .flatMap  {
+                        it.alertCount = it.alertCount!! + 1
+
+                        cameraCrud.save(it)
+                    }
+                    .log()
             }
             .map { alert.toEntity() }
             .flatMap { this.alertCrud.save(it) }
@@ -96,6 +108,20 @@ class AlertServiceImpl(
                     }
                     .log()
             }
+    }
+
+    override fun getAlertsByCameraId(
+        cameraId: String,
+        page: Int,
+        size: Int
+    ): Flux<AlertBoundary> {
+        if (page < 0 || size < 1)
+            return Flux.empty()
+
+        return this.alertCrud
+            .findAllByCameraId(cameraId, PageRequest.of(page, size, Sort.Direction.ASC, "timestamp"))
+            .map { AlertBoundary(it) }
+            .log()
     }
 
     override fun deleteAlert(
