@@ -15,10 +15,14 @@ class VehicleBoundary(
     var description: String?,
     var timestamp: Date?,
     var stayDuration: Long?,
+    var top: int?,
+    var left: int?,
+    var width: int?,
+    var height: int?,
     var latitude: Double?,
     var longitude: Double?
 ) {
-    constructor() : this(null, null, null, null, null, null, null, null, null, null, null, null, null, null)
+    constructor() : this(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)
 
     override fun toString(): String {
         return "VehicleEntity(" +
@@ -34,6 +38,10 @@ class VehicleBoundary(
                 " description=$description," +
                 " timestamp=$timestamp," +
                 " stayDuration=$stayDuration," +
+                " top=$top," +
+                " left=$left," +
+                " width=$width," +
+                " height=$height," +
                 " latitude=$latitude," +
                 " longitude=$longitude)"
     }
