@@ -144,7 +144,7 @@ def process_image(image, models):
             }
 
             # Create a vehicle in a database
-            create_vehicle(v)
+            create_vehicle(v)  # can be problem be careful
 
             # combined_result = (vehicle, car_damage_results)
             full_list.append(v)
@@ -182,6 +182,49 @@ def process_image(image, models):
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error processing image: {str(e)}")
+
+
+def demo_work_flow(models):
+    """
+    This function is a demo workflow that simulates the process of capturing an image,
+    detecting vehicles, blurring faces, and detecting car damages.
+    It uses the provided models for each step.
+    """
+    name = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    base_path = os.path.dirname(os.path.abspath(__file__))
+    location_name = os.path.join(base_path, "image_output", f"{name}.png")
+    vehicle_model = models.get("vehicle")
+    face_blur_model = models.get("face_blur")
+    car_damage_model = models.get("car_damage")
+    camera = models.get("camera")
+    if not vehicle_model or not face_blur_model or not car_damage_model or not camera:
+        raise HTTPException(status_code=500, detail="Models are not initialized.")
+    # Capture an image from the camera
+    camera_name = camera.capture_image()
+    if not camera_name:
+        raise HTTPException(status_code=500, detail="Camera is not working.")
+    # detect vehicles in the captured image
+    vehicle_results = vehicle_model.objectDetect(camera_name["name"]).get("vehicles")
+    # if not vehicle_results:
+    #   raise HTTPException(status_code=500, detail="Vehicle detection failed.")
+    # Read the captured image
+    img = cv2.imread(camera_name["name"])
+    full_list = []
+    for vehicle in vehicle_results:
+        rect = vehicle.get("rect")
+        car_img = img[
+            int(rect["top"]) : int(rect["top"]) + int(rect["height"]),
+            int(rect["left"]) : int(rect["left"]) + int(rect["width"]),
+        ]
+        # detects damages in the vehicle image
+        car_damage_results = car_damage_model(car_img)
+        if not car_damage_results:
+            raise HTTPException(status_code=500, detail="Car damage detection failed.")
+        # Combine vehicle tuple and car_damage_results tuple
+        combined_result = (vehicle, car_damage_results)
+        full_list.append(combined_result)
+    # Blur faces in the captured image
+    blurred_image = face_blur_model.blur_faces(camera_name["name"], camera_name["name"])
 
 
 def work(models):
@@ -229,7 +272,7 @@ def work(models):
         time.sleep(1)
 
 
-async def compare_vehicles_from_files(db_vehicle_data, image_vehicle_data):
+def compare_vehicles_from_files(db_vehicle_data, image_vehicle_data):
     """
     Accepts two JSON files:
     - db_vehicle_file: JSON file with db_vehicle object
@@ -357,11 +400,11 @@ def compare_vehicles(db_vehicle, image_vehicle, weights=None):
     return round(total_score * 100, 2)
 
 
-async def create_vehicle(v):
+def create_vehicle(v):
     url = "http://data-management-service:8080/vehicles/create"
     print(v)
-    async with httpx.AsyncClient() as client:
-        response = await client.post(url, json=v)
+    with httpx.AsyncClient() as client:
+        response = client.post(url, json=v)
         if response.status_code != 200:
             print(f"Failed to create vehicle: {response.text}")
             raise HTTPException(
@@ -380,17 +423,19 @@ def compare_all_vehicles_from_db(db_uri, db_name, collection_name, detected_vehi
     :param detected_vehicles: List of vehicle dicts from image
     :return: List of match results (dict with db_vehicle, detected_vehicle, score)
     """
-    client = MongoClient(db_uri)
-    db = client[db_name]
-    collection = db[collection_name]
-
-    stored_vehicles = list(collection.find())
-    if not stored_vehicles:
+    url = "http://data-management-service:8080/vehicles/getVehicles"
+    with httpx.AsyncClient() as client:
+        response = client.get(url)
+        if response.status_code != 200:
+            print(f"Failed to fetch vehicles: {response.text}")
+            return None
+    vehicles = response.json()
+    if not vehicles:
         raise HTTPException(
             status_code=404, detail="No vehicles found in the database."
         )
     for detected in detected_vehicles:
-        for stored in stored_vehicles:
+        for stored in vehicles:
             score = compare_vehicles(
                 stored, detected
             )  # uses the function defined earlier

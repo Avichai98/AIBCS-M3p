@@ -78,6 +78,9 @@ async def process_image_demo(file: UploadFile = File(...)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.post("/demo_work")
+async def demo_work_flow():
+    pass
 
 def encode_image_to_base64(image):
     _, buffer = cv2.imencode(".png", image)
