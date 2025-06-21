@@ -95,18 +95,18 @@ def stop():
 
 
 # async def process_image(file: UploadFile = File(...)):
-async def process_image(contents, models):
+def process_image(image, models):
     try:
-        image = Image.open(io.BytesIO(contents)).convert("RGB")
         name = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        location_name = f"image_output/{name}.png"
+        base_path = os.path.dirname(os.path.abspath(__file__))
+        location_name = os.path.join(base_path, "image_output", f"{name}.png")
+        # location_name = f"{base_path}/image_output/{name}.png"
         vehicle_model = models.get("vehicle")
         face_blur_model = models.get("face_blur")
         car_damage_model = models.get("car_damage")
         if not vehicle_model or not face_blur_model or not car_damage_model:
             raise HTTPException(status_code=500, detail="Models are not initialized.")
         # Save the PIL image at location_name using cv2
-        os.makedirs("image_output", exist_ok=True)
         cv2.imwrite(location_name, cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR))
         vehicle_results = vehicle_model.objectDetect(location_name).get("vehicles")
         img = cv2.imread(location_name)
@@ -144,7 +144,7 @@ async def process_image(contents, models):
             }
 
             # Create a vehicle in a database
-            await create_vehicle(v)
+            create_vehicle(v)
 
             # combined_result = (vehicle, car_damage_results)
             full_list.append(v)
@@ -169,7 +169,11 @@ async def process_image(contents, models):
                 img, label, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 255, 0), 3
             )
 
-        output_image_path = f"image_output/{name}_detected.png"
+        # output_image_path = f"image_output/{name}_detected.png"
+        output_image_path = os.path.join(
+            base_path, "image_output", f"{name}_detected.png"
+        )
+
         cv2.imwrite(output_image_path, img)
         # Blur faces in the captured image
         blurred_image = face_blur_model.blur_faces(output_image_path, output_image_path)

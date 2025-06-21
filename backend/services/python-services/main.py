@@ -32,6 +32,7 @@ sys.path.append(
     os.path.join(os.path.dirname(__file__), "Damaged-Car-parts-prediction-Model")
 )
 from car_parts import set_detection
+import traceback
 
 
 start_flag = 0
@@ -67,9 +68,15 @@ async def stop_work():
 
 @app.post("/demo")
 async def process_image_demo(file: UploadFile = File(...)):
-    file_content = await file.read()
-    answer = process_image(file_content, models)
-    return answer
+    try:
+        file_content = await file.read()
+        image = Image.open(io.BytesIO(file_content)).convert("RGB")
+        new_width, new_height = 1280, 720
+        image = image.resize((new_width, new_height))
+        answer = process_image(image, models)
+        return answer
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 def encode_image_to_base64(image):
@@ -82,22 +89,31 @@ async def root():
     return RedirectResponse(url="/docs")
 
 
-# from pymongo import MongoClient #might replace it
 @app.post("/compare_vehicles")
 async def compare_vehicles_endpoint(
     file1: UploadFile = File(...), file2: UploadFile = File(...)
 ):
-    if not models:
-        raise HTTPException(status_code=500, detail="Models not built yet")
-
     try:
         image1 = await file1.read()
         image2 = await file2.read()
-
-        result = compare_vehicles(image1, image2, models)
-        return result
+        db_vehicle = json.loads(image1)["vehicles"]
+        image_vehicle = json.loads(image2)["vehicles"]
+        if not db_vehicle or not image_vehicle:
+            raise HTTPException(
+                status_code=400, detail="No vehicles found in the provided images."
+            )
+        results = []
+        for db_v in db_vehicle:
+            for img_v in image_vehicle:
+                score = compare_vehicles(db_v, img_v)
+                if score > 50:
+                    results.append(
+                        {"db_vehicle": db_v, "image_vehicle": img_v, "score": score}
+                    )
+        return {"results": results}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        tb = traceback.format_exc()
+        raise HTTPException(status_code=500, detail=f"{str(e)}\nLocation:\n{tb}")
 
 
 if __name__ == "__main__":
