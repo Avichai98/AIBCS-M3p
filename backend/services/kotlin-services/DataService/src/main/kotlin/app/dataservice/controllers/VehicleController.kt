@@ -57,7 +57,7 @@ class VehicleController(
 
     @GetMapping(
         path = ["/getVehicles"],
-        produces = [MediaType.TEXT_EVENT_STREAM_VALUE]
+        produces = [MediaType.APPLICATION_JSON_VALUE, MediaType.TEXT_EVENT_STREAM_VALUE]
     )
     fun getVehicles(
         @RequestParam(name = "page", required = false, defaultValue = "0") page: Int,

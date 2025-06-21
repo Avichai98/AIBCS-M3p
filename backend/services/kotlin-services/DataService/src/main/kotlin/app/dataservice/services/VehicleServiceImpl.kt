@@ -45,7 +45,7 @@ class VehicleServiceImpl(
     ): Mono<Void> {
         return vehicleCrud
             .findById(id)
-            .switchIfEmpty(Mono.error(NotFoundException404("User with the id: $id not found")))
+            .switchIfEmpty(Mono.error(NotFoundException404("vehicle with the id: $id not found")))
             .flatMap {
                 if (!updatedVehicle.imageUrl.isNullOrBlank())
                     it.imageUrl = updatedVehicle.imageUrl
@@ -59,7 +59,7 @@ class VehicleServiceImpl(
                 if (updatedVehicle.cameraId != null)
                     it.cameraId = updatedVehicle.cameraId
 
-                it.stayDuration = Date().time - it.timestamp!!.time
+                it.stayDuration = (Date().time - it.timestamp!!.time) / 1000
                 this.vehicleCrud.save(it)
             }
             .then()

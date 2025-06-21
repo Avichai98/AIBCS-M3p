@@ -1,4 +1,6 @@
 import sys
+
+import ast
 from fastapi import FastAPI, HTTPException, UploadFile, File
 import os
 import cv2
@@ -218,11 +220,105 @@ def work():
 
 
 async def create_vehicle(v):
-    url = "http://data-management-service:8080/vehicles/create"
-    print(v)
+    existing_vehicle = await find_matching_vehicle(v)
+
+    if existing_vehicle:
+        print(f"Found matching vehicle: {existing_vehicle['id']}")
+        await update_vehicle_duration(existing_vehicle)
+        return {"message": "Vehicle updated"}
+
+    else:
+        url = "http://data-management-service:8080/vehicles/create"
+        async with httpx.AsyncClient() as client:
+            response = await client.post(url, json=v)
+            if response.status_code != 200:
+                print(f"Failed to create vehicle: {response.text}")
+                raise HTTPException(status_code=500, detail="Failed to create vehicle in database.")
+        return {"status": response.status_code}
+
+def parse_description(description_str):
+    try:
+        desc = ast.literal_eval(description_str)
+        classes = desc.get('classes', [])
+        return classes
+    except:
+        return []
+
+def compare_vehicles(car_a, car_b):
+    score = 0
+    total_weight = 0
+
+    # Location comparison
+    if (car_a['latitude'] == car_b['latitude']) and (car_a['longitude'] == car_b['longitude']):
+        location_score = min(car_a['locationProb'], car_b['locationProb'])
+
+
+    # Type comparison
+    if car_a['type'] == car_b['type']:
+        type_score = min(car_a['typeProb'], car_b['typeProb'])
+        score += type_score * 0.3
+    total_weight += 0.3
+
+    # Manufacturer comparison
+    if car_a['manufacturer'] == car_b['manufacturer']:
+        manuf_score = min(car_a['manufacturerProb'], car_b['manufacturerProb'])
+        score += manuf_score * 0.3
+    total_weight += 0.3
+
+    # Color comparison
+    if car_a['color'] == car_b['color']:
+        color_score = min(car_a['colorProb'], car_b['colorProb'])
+        score += color_score * 0.2
+    total_weight += 0.2
+
+    # Damage comparison
+    damages_a = set(parse_description(car_a['description']))
+    damages_b = set(parse_description(car_b['description']))
+    if damages_a == damages_b:
+        score += 0.2
+    total_weight += 0.2
+
+    final_score = score / total_weight
+    return final_score
+
+async def find_matching_vehicle(new_vehicle):
+    url = "http://data-management-service:8080/vehicles/getVehicles"
     async with httpx.AsyncClient() as client:
-        response = await client.post(url, json=v)
+        response = await client.get(url)
         if response.status_code != 200:
-            print(f"Failed to create vehicle: {response.text}")
-            raise HTTPException(status_code=500, detail="Failed to create vehicle in database.")
-    return response.json()
+            print(f"Failed to fetch vehicles: {response.text}")
+            return None
+        vehicles = response.json()
+
+    for existing_vehicle in vehicles:
+        score = compare_vehicles(new_vehicle, existing_vehicle)
+        print(f"Comparing with vehicle {existing_vehicle['id']}: score = {score}")
+        if score >= 0.7:
+            return existing_vehicle
+
+    return None
+
+async def update_vehicle_duration(existing_vehicle):
+    from datetime import datetime, timezone
+
+    now = datetime.now(timezone.utc)
+    first_timestamp = datetime.fromisoformat(existing_vehicle["timestamp"])
+    delta_seconds = (now - first_timestamp).total_seconds()
+
+    update_payload = {
+        "imageUrl": existing_vehicle["imageUrl"],
+        "latitude": existing_vehicle["latitude"],
+        "longitude": existing_vehicle["longitude"],
+        "cameraId": existing_vehicle["cameraId"],
+        "stayDuration": delta_seconds
+    }
+
+    url = f"http://data-management-service:8080/vehicles/update/{existing_vehicle['id']}"
+    async with httpx.AsyncClient() as client:
+        response = await client.put(url, json=update_payload)
+        if response.status_code != 200:
+            print(f"Failed to update vehicle: {response.text}")
+            raise HTTPException(status_code=500, detail="Failed to update vehicle duration.")
+
+
+
