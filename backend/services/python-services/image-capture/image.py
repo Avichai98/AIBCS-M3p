@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from cv2 import VideoCapture, imwrite
+import cv2
 from datetime import datetime
 import os
 

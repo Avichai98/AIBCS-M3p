@@ -1,5 +1,6 @@
 import sys
 from fastapi import FastAPI, HTTPException, UploadFile, File
+from fastapi.responses import RedirectResponse
 import os
 import cv2
 import numpy as np
@@ -9,6 +10,10 @@ from datetime import datetime
 from PIL import Image
 import io
 import httpx
+import uvicorn
+import base64
+import json
+from api_comandes import compare_vehicles, build, process_image, start, stop
 
 sys.path.append(
     os.path.join(
@@ -27,7 +32,8 @@ sys.path.append(
     os.path.join(os.path.dirname(__file__), "Damaged-Car-parts-prediction-Model")
 )
 from car_parts import set_detection
-import base64
+import traceback
+
 
 start_flag = 0
 models = {}
@@ -39,190 +45,79 @@ app = FastAPI(
 )
 
 
+@app.get("/build")
+def build_models():
+    global models
+    answers = build()
+    models = answers["models"]
+    return {
+        "message": "Models built successfully",
+        "status": answers["status"],
+    }
+
+
+@app.get("/start")
+async def start_work():
+    start()
+
+
+@app.get("/stop")
+async def stop_work():
+    stop()
+
+
+@app.post("/demo")
+async def process_image_demo(file: UploadFile = File(...)):
+    try:
+        file_content = await file.read()
+        image = Image.open(io.BytesIO(file_content)).convert("RGB")
+        new_width, new_height = 1280, 720
+        image = image.resize((new_width, new_height))
+        answer = process_image(image, models)
+        return answer
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/demo_work")
+async def demo_work_flow():
+    pass
+
 def encode_image_to_base64(image):
     _, buffer = cv2.imencode(".png", image)
     return base64.b64encode(buffer).decode("utf-8")
 
 
-@app.get("/build")
-def build():
+@app.get("/")
+async def root():
+    return RedirectResponse(url="/docs")
+
+
+@app.post("/compare_vehicles")
+async def compare_vehicles_endpoint(
+    file1: UploadFile = File(...), file2: UploadFile = File(...)
+):
     try:
-        item_paths = get_items()
-        models["vehicle"] = VehicleRecognitionModel(*item_paths)
-        model_path = load_model()
-        models["face_blur"] = FaceBlur(model_path)
-        models["car_damage"] = set_detection()
-        models["camera"] = camera_use(1)
-        return {
-            "message": "Models initialized successfully.",
-            "models": {
-                "vehicle": "initialized",
-                "face_blur": "initialized",
-                "capture_image": "ready",
-                "car_damage": "initialized",
-            },
-        }
-    except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Error initializing models: {str(e)}"
-        )
-
-
-@app.post("/start")
-def start():
-    global start_flag
-    start_flag = 1
-    thread = threading.Thread(target=work)
-    thread.start()
-    return {"message": "Started"}
-
-
-@app.post("/stop")
-def stop():
-    global start_flag
-    start_flag = 0
-    return {"message": "Stopped"}
-
-
-@app.post("/demo")
-async def process_image(file: UploadFile = File(...)):
-    try:
-        contents = await file.read()
-        image = Image.open(io.BytesIO(contents)).convert("RGB")
-        name = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        location_name = f"image_output/{name}.png"
-        vehicle_model = models.get("vehicle")
-        face_blur_model = models.get("face_blur")
-        car_damage_model = models.get("car_damage")
-        if not vehicle_model or not face_blur_model or not car_damage_model:
-            raise HTTPException(status_code=500, detail="Models are not initialized.")
-        # Save the PIL image at location_name using cv2
-        os.makedirs("image_output", exist_ok=True)
-        cv2.imwrite(location_name, cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR))
-        vehicle_results = vehicle_model.objectDetect(location_name).get("vehicles")
-        img = cv2.imread(location_name)
-        full_list = []
-        for vehicle in vehicle_results:
-            rect = vehicle.get("rect")
-            car_img = img[
-                int(rect["top"]) : int(rect["top"]) + int(rect["height"]),
-                int(rect["left"]) : int(rect["left"]) + int(rect["width"]),
-            ]
-            car_damage_results = car_damage_model(car_img)
-            if not car_damage_results:
-                raise HTTPException(
-                    status_code=500, detail="Car damage detection failed."
-                )
-            v = {
-                "id": 0,
-                "cameraId": "684928ac8c23717f386e8191",
-                "type": str(vehicle.get("object")),
-                "manufacturer": str(vehicle.get("make")),
-                "color": str(vehicle.get("color")),
-                "typeProb": float(vehicle.get("object_prob", 0)),
-                "manufacturerProb": float(vehicle.get("make_prob", 0)),
-                "colorProb": float(vehicle.get("color_prob", 0)),
-                "imageUrl": "none",#str(encode_image_to_base64(car_img)),
-                "description": str(car_damage_results),
-                "timestamp": 0,
-                "stayDuration": 0,
-              #  "top": int(rect["top"]),
-              #  "left": int(rect["left"]),
-              #  "width": int(rect["width"]),
-              #  "height": int(rect["height"]),
-                "latitude": round(float(rect["top"]) + (float(rect["height"]) / 2), 3),
-                "longitude": round(float(rect["left"]) + (float(rect["width"]) / 2), 3)
-            }
-
-            # Create a vehicle in a database
-            await create_vehicle(v)
-
-            # combined_result = (vehicle, car_damage_results)
-            full_list.append(v)
-        # Draw bounding boxes and probabilities on the image
-        for vehicle in vehicle_results:
-            rect = vehicle.get("rect")
-            object = vehicle.get("object", 0)
-            object_prob = vehicle.get("object_prob", 0)
-            color = vehicle.get("color", 0)
-            color_prob = vehicle.get("color_prob", 0)
-            make = vehicle.get("make", 0)
-            make_prob = vehicle.get("make_prob", 0)
-            label = f"{object} {float(object_prob):.2f} {make} {float(make_prob):.2f} {color} {float(color_prob):.2f}"
-            x, y, w, h = (
-                int(rect["left"]),
-                int(rect["top"]),
-                int(rect["width"]),
-                int(rect["height"]),
+        image1 = await file1.read()
+        image2 = await file2.read()
+        db_vehicle = json.loads(image1)["vehicles"]
+        image_vehicle = json.loads(image2)["vehicles"]
+        if not db_vehicle or not image_vehicle:
+            raise HTTPException(
+                status_code=400, detail="No vehicles found in the provided images."
             )
-            cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 2)
-            cv2.putText(
-                img, label, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 255, 0), 3
-            )
-
-        output_image_path = f"image_output/{name}_detected.png"
-        cv2.imwrite(output_image_path, img)
-        # Blur faces in the captured image
-        blurred_image = face_blur_model.blur_faces(output_image_path, output_image_path)
-        return {
-            "vehicles": full_list,
-        }
+        results = []
+        for db_v in db_vehicle:
+            for img_v in image_vehicle:
+                score = compare_vehicles(db_v, img_v)
+                if score > 50:
+                    results.append(
+                        {"db_vehicle": db_v, "image_vehicle": img_v, "score": score}
+                    )
+        return {"results": results}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error processing image: {str(e)}")
+        tb = traceback.format_exc()
+        raise HTTPException(status_code=500, detail=f"{str(e)}\nLocation:\n{tb}")
 
 
-def work():
-    # get all the models and check if they are not null
-    global start_flag
-    vehicle_model = models.get("vehicle")
-    face_blur_model = models.get("face_blur")
-    car_damage_model = models.get("car_damage")
-    camera = models.get("camera")
-    if not vehicle_model or not face_blur_model or not car_damage_model or not camera:
-        raise HTTPException(status_code=500, detail="Models are not initialized.")
-    # Capture an image from the camera
-    while start_flag == 1:
-        camera_name = camera.capture_image()
-        if not camera_name:
-            raise HTTPException(status_code=500, detail="Camera is not working.")
-        # detect vehicles in the captured image
-        vehicle_results = vehicle_model.objectDetect(camera_name["name"]).get(
-            "vehicles"
-        )
-        # if not vehicle_results:
-        #   raise HTTPException(status_code=500, detail="Vehicle detection failed.")
-        # Read the captured image
-        img = cv2.imread(camera_name["name"])
-        full_list = []
-        for vehicle in vehicle_results:
-            rect = vehicle.get("rect")
-            car_img = img[
-                int(rect["top"]) : int(rect["top"]) + int(rect["height"]),
-                int(rect["left"]) : int(rect["left"]) + int(rect["width"]),
-            ]
-            # detects damages in the vehicle image
-            car_damage_results = car_damage_model(car_img)
-            if not car_damage_results:
-                raise HTTPException(
-                    status_code=500, detail="Car damage detection failed."
-                )
-            # Combine vehicle tuple and car_damage_results tuple
-            combined_result = (vehicle, car_damage_results)
-            full_list.append(combined_result)
-        # Blur faces in the captured image
-        blurred_image = face_blur_model.blur_faces(
-            camera_name["name"], camera_name["name"]
-        )
-        time.sleep(1)
-
-
-
-async def create_vehicle(v):
-    url = "http://data-management-service:8080/vehicles/create"
-    print(v)
-    async with httpx.AsyncClient() as client:
-        response = await client.post(url, json=v)
-        if response.status_code != 200:
-            print(f"Failed to create vehicle: {response.text}")
-            raise HTTPException(status_code=500, detail="Failed to create vehicle in database.")
-    return response.json()
+if __name__ == "__main__":
+    uvicorn.run("main:app", host="0.0.0.0", port=8082, reload=True)
