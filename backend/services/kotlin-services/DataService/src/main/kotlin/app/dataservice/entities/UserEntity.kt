@@ -2,7 +2,7 @@ package app.dataservice.entities
 
 import org.springframework.data.annotation.Id
 import org.springframework.data.mongodb.core.mapping.Document
-import java.util.Date
+import java.time.LocalDateTime
 
 @Document (collection = "users")
 class UserEntity (
@@ -13,8 +13,8 @@ class UserEntity (
     var password: String?,
     var mobile: String?,
     var username: String?,
-    var createdAt: Date?,
-    var updatedAt: Date?
+    var createdAt: LocalDateTime?,
+    var updatedAt: LocalDateTime?
 ){
     constructor() : this(null, null, null, null, null, null, null, null, null)
 

@@ -1,7 +1,7 @@
 package app.dataservice.boundaries
 
 import app.dataservice.entities.AlertEntity
-import java.util.Date
+import java.time.LocalDateTime
 
 class AlertBoundary(
     var id: String?,
@@ -9,7 +9,7 @@ class AlertBoundary(
     var type: String?,
     var severity: String?,
     var description: String?,
-    var timestamp: Date?,
+    var timestamp: LocalDateTime?,
     var vehicleBoundary: VehicleBoundary?
 ) {
     constructor() : this(null, null, null, null, null, null, null)
