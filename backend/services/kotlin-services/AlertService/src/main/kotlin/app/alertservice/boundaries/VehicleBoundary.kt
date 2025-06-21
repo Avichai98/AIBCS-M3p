@@ -15,12 +15,12 @@ class VehicleBoundary(
     var description: String?,
     var timestamp: Date?,
     var stayDuration: Long?,
-    var top: int?,
-    var left: int?,
-    var width: int?,
-    var height: int?,
-    var latitude: Double?,
-    var longitude: Double?
+    var top: Int?,
+    var left: Int?,
+    var width: Int?,
+    var height: Int?,
+    var latitude: Float?,
+    var longitude: Float?
 ) {
     constructor() : this(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)
 

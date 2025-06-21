@@ -16,10 +16,14 @@ class VehicleBoundary(
     var description: String?,
     var timestamp: Date?,
     var stayDuration: Long?,
+    var top: Int?,
+    var left: Int?,
+    var width: Int?,
+    var height: Int?,
     var latitude: Float?,
     var longitude: Float?
 ) {
-    constructor(): this(null, null, null, null, null, null, null, null, null, null, null, null, null, null)
+    constructor(): this(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)
 
     constructor(vehicleEntity: VehicleEntity): this(){
         this.id = vehicleEntity.id
@@ -34,6 +38,10 @@ class VehicleBoundary(
         this.description = vehicleEntity.description
         this.timestamp = vehicleEntity.timestamp
         this.stayDuration = vehicleEntity.stayDuration
+        this.top = vehicleEntity.top
+        this.left = vehicleEntity.left
+        this.width = vehicleEntity.width
+        this.height = vehicleEntity.height
         this.latitude = vehicleEntity.latitude
         this.longitude = vehicleEntity.longitude
     }
@@ -53,6 +61,10 @@ class VehicleBoundary(
         vehicleEntity.description = description
         vehicleEntity.timestamp = timestamp
         vehicleEntity.stayDuration = stayDuration
+        vehicleEntity.top = top
+        vehicleEntity.left = left
+        vehicleEntity.width = width
+        vehicleEntity.height = height
         vehicleEntity.latitude = latitude
         vehicleEntity.longitude = longitude
 
@@ -73,6 +85,10 @@ class VehicleBoundary(
                 " description=$description," +
                 " timestamp=$timestamp," +
                 " stayDuration=$stayDuration," +
+                " top=$top," +
+                " left=$left," +
+                " width=$width," +
+                " height=$height," +
                 " latitude=$latitude," +
                 " longitude=$longitude)"
     }

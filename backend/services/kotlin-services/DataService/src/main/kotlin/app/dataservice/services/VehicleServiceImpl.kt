@@ -59,7 +59,7 @@ class VehicleServiceImpl(
                 if (updatedVehicle.cameraId != null)
                     it.cameraId = updatedVehicle.cameraId
 
-                it.stayDuration = Date().time - it.timestamp!!.time
+                it.stayDuration = Date().time - it.timestamp!!.time / 1000 // Calculate stay duration in seconds
                 this.vehicleCrud.save(it)
             }
             .then()
