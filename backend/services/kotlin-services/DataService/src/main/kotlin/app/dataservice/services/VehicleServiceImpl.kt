@@ -43,7 +43,7 @@ class VehicleServiceImpl(
     override fun updateVehicle(
         id: String,
         updatedVehicle: VehicleBoundary
-    ): Mono<Void> {
+    ): Mono<VehicleBoundary> {
         return vehicleCrud
             .findById(id)
             .switchIfEmpty(Mono.error(NotFoundException404("User with the id: $id not found")))
@@ -67,7 +67,7 @@ class VehicleServiceImpl(
                 it.stayDurationFormatted = formatDurationCompact(it.timestamp!!, now)
                 this.vehicleCrud.save(it)
             }
-            .then()
+            .map { VehicleBoundary(it) }
             .log()
     }
 

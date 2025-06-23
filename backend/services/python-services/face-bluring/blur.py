@@ -61,18 +61,18 @@ class FaceBlur:
 # face_blur = FaceBlur(face_blur_model)
 
 
-@app.post("/blur")
-async def blur_faces(file: UploadFile = File(...)):
-    try:
-        contents = await file.read()
-        name = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        temp_path = f"temp_{name}.jpg"
-        with open(temp_path, "wb") as f:
-            f.write(contents)
-        output_path = FaceBlur.blur_faces(temp_path, name)  # BAD
-        os.remove(temp_path)
-        return FileResponse(
-            output_path, media_type="image/jpeg", filename=os.path.basename(output_path)
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+# @app.post("/blur")
+# async def blur_faces(file: UploadFile = File(...)):
+#     try:
+#         contents = await file.read()
+#         name = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+#         temp_path = f"temp_{name}.jpg"
+#         with open(temp_path, "wb") as f:
+#             f.write(contents)
+#         output_path = FaceBlur.blur_faces(temp_path, name)  # BAD
+#         os.remove(temp_path)
+#         return FileResponse(
+#             output_path, media_type="image/jpeg", filename=os.path.basename(output_path)
+#         )
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=str(e))

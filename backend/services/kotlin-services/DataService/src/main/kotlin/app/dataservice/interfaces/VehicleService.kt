@@ -6,7 +6,7 @@ import reactor.core.publisher.Mono
 
 interface VehicleService {
     fun createVehicle(vehicle: VehicleBoundary): Mono<VehicleBoundary>
-    fun updateVehicle(id: String, updatedVehicle: VehicleBoundary): Mono<Void>
+    fun updateVehicle(id: String, updatedVehicle: VehicleBoundary): Mono<VehicleBoundary>
     fun getVehicleById(id: String): Mono<VehicleBoundary>
     fun getVehiclesPage(page: Int, size: Int): Flux<VehicleBoundary>
     fun getVehiclesByManufacturer(manufacturer: String, page: Int, size: Int): Flux<VehicleBoundary>

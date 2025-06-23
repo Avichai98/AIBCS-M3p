@@ -13,26 +13,17 @@ import httpx
 import uvicorn
 import base64
 import json
-from api_comandes import compare_vehicles, build, process_image, start, stop
-
-sys.path.append(
-    os.path.join(
-        os.path.dirname(__file__), "vehicle-recognition-api-yolov4-python-master"
-    )
+from api_comandes import (
+    compare_vehicles,
+    build,
+    process_image,
+    start,
+    stop,
+    demo_work,
 )
-from vehicle_detection import VehicleRecognitionModel, get_items
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "face-bluring"))
-from blur import FaceBlur, load_model
-
-sys.path.append(os.path.join(os.path.dirname(__file__), "image-capture"))
-from image import camera_use
-
-sys.path.append(
-    os.path.join(os.path.dirname(__file__), "Damaged-Car-parts-prediction-Model")
-)
-from car_parts import set_detection
 import traceback
+from kafka_queue import update_vehicle
 
 
 start_flag = 0
@@ -65,6 +56,11 @@ async def start_work():
 async def stop_work():
     stop()
 
+@app.put("/update_vehicle")
+async def update_vehicle_route(vehicle: dict):
+    update_vehicle(vehicle)
+    return {"status": "Vehicle update sent"}
+
 
 @app.post("/demo")
 async def process_image_demo(file: UploadFile = File(...)):
@@ -76,11 +72,23 @@ async def process_image_demo(file: UploadFile = File(...)):
         answer = process_image(image, models)
         return answer
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        tb = traceback.format_exc()
+        raise HTTPException(status_code=500, detail=f"{str(e)}\nLocation:\n{tb}")
+
 
 @app.post("/demo_work")
-async def demo_work_flow():
-    pass
+async def demo_work_flow(file1: UploadFile = File(None)):
+    global models
+    flag = 0
+    try:
+        file_content = await file1.read() if file1 is not None else None
+        if file_content is None:
+            flag = 1
+        demo_work(file_content, models, flag=flag)
+    except Exception as e:
+        tb = traceback.format_exc()
+        raise HTTPException(status_code=500, detail=f"{str(e)}\nLocation:\n{tb}")
+
 
 def encode_image_to_base64(image):
     _, buffer = cv2.imencode(".png", image)
@@ -120,4 +128,4 @@ async def compare_vehicles_endpoint(
 
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=8082, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=5000, reload=True)

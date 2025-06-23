@@ -40,6 +40,11 @@ dependencies {
     runtimeOnly("io.jsonwebtoken:jjwt-impl:0.11.5")
     runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.11.5") // or jjwt-gson if preferred
 
+    // Kafka dependencies
+    implementation("org.apache.kafka:kafka-streams")
+    implementation("org.springframework.kafka:spring-kafka")
+    testImplementation("org.springframework.kafka:spring-kafka-test")
+
 }
 
 kotlin {
