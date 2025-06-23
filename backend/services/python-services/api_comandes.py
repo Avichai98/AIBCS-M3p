@@ -99,8 +99,10 @@ def process_image(image, models):
     try:
         name = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         base_path = os.path.dirname(os.path.abspath(__file__))
-        location_name = os.path.join(base_path, "image_output", f"{name}.png")
-        # location_name = f"{base_path}/image_output/{name}.png"
+        folderPath = os.path.join(base_path, "image_output")
+        if not os.path.exists(folderPath):
+            os.makedirs(folderPath)
+        location_name = os.path.join(folderPath, f"{name}.png")
         vehicle_model = models.get("vehicle")
         face_blur_model = models.get("face_blur")
         car_damage_model = models.get("car_damage")
@@ -109,6 +111,7 @@ def process_image(image, models):
         # Save the PIL image at location_name using cv2
         cv2.imwrite(location_name, cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR))
         vehicle_results = vehicle_model.objectDetect(location_name).get("vehicles")
+        logging.info(f"output image: {location_name}")
         img = cv2.imread(location_name)
         full_list = []
         for vehicle in vehicle_results:
@@ -144,7 +147,7 @@ def process_image(image, models):
             }
 
             # Create a vehicle in a database
-            create_vehicle(v)  # can be problem be careful
+            # create_vehicle(v)  # can be problem be careful
 
             # combined_result = (vehicle, car_damage_results)
             full_list.append(v)
@@ -173,6 +176,7 @@ def process_image(image, models):
         output_image_path = os.path.join(
             base_path, "image_output", f"{name}_detected.png"
         )
+        logging.info(f"output image detected: {output_image_path}")
 
         cv2.imwrite(output_image_path, img)
         # Blur faces in the captured image
@@ -309,16 +313,16 @@ def compare_vehicles(db_vehicle, image_vehicle, weights=None):
     :param weights: dict with feature weights
     :return: float similarity score
     """
-    if weights is None:
-        weights = {
-            "type": 0.3,
-            "manufacturer": 0.15,
-            "color": 0.3,
-            "bbox": 0.2,
-            "damage": 0.05,
-        }
+    # if weights is None:
+    #     weights = {
+    #         "type": 0.3,
+    #         "manufacturer": 0.15,
+    #         "color": 0.3,
+    #         "bbox": 0.2,
+    #         "damage": 0.05,
+    #     }
 
-    def match_score(val1, val2, prob1, prob2, min_score=0.90):
+    def match_score(val1, val2, prob1, prob2, min_score=0.0):
         if val1.lower() != val2.lower():
             return 0.0
         return max((prob1 + prob2) / 2.0, min_score)
@@ -345,7 +349,7 @@ def compare_vehicles(db_vehicle, image_vehicle, weights=None):
     def damage_match(details1, details2):
         details1_class = details1.get("classes", "")
         details2_class = details2.get("classes", "")
-        max_details = max(len(details1), len(details2))
+        max_details = max(len(details1_class), len(details2_class))
         total_classes = 0
         for key in details1_class:
             if key in details2_class:
@@ -356,6 +360,71 @@ def compare_vehicles(db_vehicle, image_vehicle, weights=None):
             return 1.0
         # return 0.0
 
+    def compute_dynamic_weights(db_vehicle, image_vehicle, base_total_weight=0.8):
+        """
+        Dynamically compute weights for type, manufacturer, and color based on average confidences.
+
+        :param base_total_weight: how much total weight these 3 fields should have (e.g., 0.8)
+        :return: dict with weights for 'type', 'manufacturer', 'color'
+        """
+
+        def avg_confidence(prob1, prob2):
+            return (prob1 + prob2) / 2
+
+        # Get confidences
+        type_conf = avg_confidence(
+            db_vehicle.get("type_prob", 0.0), image_vehicle.get("type_prob", 0.0)
+        )
+        manu_conf = avg_confidence(
+            db_vehicle.get("manufacturer_prob", 0.0),
+            image_vehicle.get("manufacturer_prob", 0.0),
+        )
+        color_conf = avg_confidence(
+            db_vehicle.get("color_prob", 0.0), image_vehicle.get("color_prob", 0.0)
+        )
+
+        total_conf = type_conf + manu_conf + color_conf
+
+        if total_conf == 0:
+            # fallback to equal weights
+            return {
+                "type": base_total_weight / 3,
+                "manufacturer": base_total_weight / 3,
+                "color": base_total_weight / 3,
+            }
+
+        # Normalize based on their proportional confidence
+        return {
+            "type": base_total_weight * (type_conf / total_conf),
+            "manufacturer": base_total_weight * (manu_conf / total_conf),
+            "color": base_total_weight * (color_conf / total_conf),
+        }
+
+    def compute_damage_weight(db_vehicle, image_vehicle, base_weight=0.05):
+        # If both empty → it's still useful → return base weight
+        db_has_damage = bool(db_vehicle.get("details", {}).get("classes"))
+        img_has_damage = bool(image_vehicle.get("details", {}).get("classes"))
+
+        if not db_has_damage and not img_has_damage:
+            return base_weight
+
+        # If only one has damage → suspicious → reduce trust
+        if db_has_damage != img_has_damage:
+            return base_weight * 0.2  # maybe very small weight
+
+        # If both have damage → use average confidence
+        def avg_conf(details):
+            confs = details.get("confidences", [])
+            return sum(confs) / len(confs) if confs else 0.0
+
+        avg_conf = (
+            avg_conf(db_vehicle["details"]) + avg_conf(image_vehicle["details"])
+        ) / 2
+        return base_weight * min(avg_conf, 1.0)
+
+    weights = compute_dynamic_weights(db_vehicle, image_vehicle, base_total_weight=0.75)
+    weights["damage"] = compute_damage_weight(db_vehicle, image_vehicle)
+    weights["bbox"] = 0.2
     # Compute scores
     type_score = match_score(
         db_vehicle["type"],
