@@ -33,6 +33,7 @@ sys.path.append(
 )
 from car_parts import set_detection
 import traceback
+from kafka_queue import update_vehicle
 
 
 start_flag = 0
@@ -64,6 +65,11 @@ async def start_work():
 @app.get("/stop")
 async def stop_work():
     stop()
+
+@app.put("/update_vehicle")
+async def update_vehicle_route(vehicle: dict):
+    update_vehicle(vehicle)
+    return {"status": "Vehicle update sent"}
 
 
 @app.post("/demo")

@@ -34,12 +34,13 @@ class VehicleController(
 
     @PutMapping(
         path = ["/update/{id}"],
-        consumes = [MediaType.APPLICATION_JSON_VALUE]
+        consumes = [MediaType.APPLICATION_JSON_VALUE],
+        produces = [MediaType.APPLICATION_JSON_VALUE]
     )
     fun update(
         @PathVariable id: String,
         @RequestBody vehicle: VehicleBoundary
-    ): Mono<Void>{
+    ): Mono<VehicleBoundary>{
      return this.vehicleService
          .updateVehicle(id, vehicle)
     }
