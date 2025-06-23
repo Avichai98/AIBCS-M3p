@@ -449,17 +449,17 @@ def compare_vehicles(db_vehicle, image_vehicle, weights=None):
     return round(total_score * 100, 2)
 
 
-def create_vehicl(v):
-    url = "http://data-management-service:8080/vehicles/create"
-    print(v)
-    with httpx.AsyncClient() as client:
-        response = client.post(url, json=v)
-        if response.status_code != 200:
-            print(f"Failed to create vehicle: {response.text}")
-            raise HTTPException(
-                status_code=500, detail="Failed to create vehicle in database."
-            )
-    return response.json()
+# def create_vehicl(v):
+#     url = "http://data-management-service:8080/vehicles/create"
+#     print(v)
+#     with httpx.AsyncClient() as client:
+#         response = client.post(url, json=v)
+#         if response.status_code != 200:
+#             print(f"Failed to create vehicle: {response.text}")
+#             raise HTTPException(
+#                 status_code=500, detail="Failed to create vehicle in database."
+#             )
+#     return response.json()
 
 
 def compare_all_vehicles_from_db(detected_vehicles):
@@ -473,12 +473,15 @@ def compare_all_vehicles_from_db(detected_vehicles):
     :return: List of match results (dict with db_vehicle, detected_vehicle, score)
     """
     url = "http://data-management-service:8080/vehicles/getVehicles"
-    with httpx.AsyncClient() as client:
-        response = client.get(url)
+    try:
+        response = httpx.get(url)
         if response.status_code != 200:
             print(f"Failed to fetch vehicles: {response.text}")
             return None
-    vehicles = response.json()
+        vehicles = response.json()
+    except Exception as e:
+        print(f"Error fetching vehicles: {e}")
+        return None
     if not vehicles:
         raise HTTPException(
             status_code=404, detail="No vehicles found in the database."
