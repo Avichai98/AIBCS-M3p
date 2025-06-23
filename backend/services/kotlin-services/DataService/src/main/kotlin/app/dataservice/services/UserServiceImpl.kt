@@ -13,7 +13,7 @@ import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
-import java.util.Date
+import java.time.LocalDateTime
 
 @Service
 class UserServiceImpl(
@@ -32,7 +32,7 @@ class UserServiceImpl(
                     Mono.error(BadRequestException400("Invalid email"))
                 else {
                     user.id = null
-                    user.createdAt = Date()
+                    user.createdAt = LocalDateTime.now()
 
                     Mono.just(it)
                 }
@@ -58,7 +58,7 @@ class UserServiceImpl(
                 if (!user.username.isNullOrBlank())
                     it.username = user.username
 
-                it.updatedAt = Date()
+                it.updatedAt = LocalDateTime.now()
                 this.userCrud.save(it)
             }
             .log()

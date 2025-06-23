@@ -1,7 +1,7 @@
 package app.dataservice.boundaries
 
 import app.dataservice.entities.UserEntity
-import java.util.Date
+import java.time.LocalDateTime
 
 class UserBoundary(
     var id: String?,
@@ -11,8 +11,8 @@ class UserBoundary(
     var password: String?,
     var mobile: String?,
     var username: String?,
-    var createdAt: Date?,
-    var updatedAt: Date?
+    var createdAt: LocalDateTime?,
+    var updatedAt: LocalDateTime?
 ) {
     constructor() : this(null, null, null, null, null, null, null, null, null)
 

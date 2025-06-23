@@ -31,6 +31,7 @@ sys.path.append(
     os.path.join(os.path.dirname(__file__), "Damaged-Car-parts-prediction-Model")
 )
 from car_parts import set_detection
+from kafka_queue import create_vehicle
 
 
 def build():
@@ -126,7 +127,7 @@ def process_image(image, models):
                 )
             v = {
                 "id": 0,
-                "cameraId": "684928ac8c23717f386e8191",
+                "cameraId": "6859134254232e6caafefef7",
                 "type": str(vehicle.get("object")),
                 "manufacturer": str(vehicle.get("make")),
                 "color": str(vehicle.get("color")),
@@ -135,7 +136,6 @@ def process_image(image, models):
                 "colorProb": float(vehicle.get("color_prob", 0)),
                 "imageUrl": "none",  # str(encode_image_to_base64(car_img)),
                 "description": str(car_damage_results),
-                "timestamp": 0,
                 "stayDuration": 0,
                 "top": int(rect["top"]),
                 "left": int(rect["left"]),
@@ -146,7 +146,10 @@ def process_image(image, models):
             }
 
             # Create a vehicle in a database
-            # create_vehicle(v)  # can be problem be careful
+            #create_vehicle(v)  # can be problem be careful
+            create_vehicle(v)
+
+            # combined_result = (vehicle, car_damage_results)
             full_list.append(v)
         # Draw bounding boxes and probabilities on the image
         for vehicle in vehicle_results:
@@ -446,7 +449,7 @@ def compare_vehicles(db_vehicle, image_vehicle, weights=None):
     return round(total_score * 100, 2)
 
 
-def create_vehicle(v):
+def create_vehicl(v):
     url = "http://data-management-service:8080/vehicles/create"
     print(v)
     with httpx.AsyncClient() as client:

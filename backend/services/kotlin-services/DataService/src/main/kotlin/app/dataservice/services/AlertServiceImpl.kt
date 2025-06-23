@@ -12,7 +12,7 @@ import org.springframework.stereotype.Service
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import java.text.SimpleDateFormat
-import java.util.Date
+import java.time.LocalDateTime
 
 @Service
 class AlertServiceImpl(
@@ -29,7 +29,7 @@ class AlertServiceImpl(
                     Mono.error(BadRequestException400("Vehicle is missing!"))
                 else{
                     alert.id = null
-                    alert.timestamp = Date()
+                    alert.timestamp = LocalDateTime.now()
 
                     Mono.just(it)
                 }

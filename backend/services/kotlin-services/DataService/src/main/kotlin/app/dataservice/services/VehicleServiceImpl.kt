@@ -11,7 +11,8 @@ import org.springframework.stereotype.Service
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import java.text.SimpleDateFormat
-import java.util.Date
+import java.time.Duration
+import java.time.LocalDateTime
 
 @Service
 class VehicleServiceImpl(
@@ -27,7 +28,7 @@ class VehicleServiceImpl(
                     Mono.error(BadRequestException400("Required fields are missing"))
                 else {
                     vehicle.id = null
-                    vehicle.timestamp = Date()
+                    vehicle.timestamp = LocalDateTime.now()
                     vehicle.stayDuration = 0
 
                     Mono.just(vehicle)
@@ -42,7 +43,7 @@ class VehicleServiceImpl(
     override fun updateVehicle(
         id: String,
         updatedVehicle: VehicleBoundary
-    ): Mono<Void> {
+    ): Mono<VehicleBoundary> {
         return vehicleCrud
             .findById(id)
             .switchIfEmpty(Mono.error(NotFoundException404("User with the id: $id not found")))
@@ -59,10 +60,14 @@ class VehicleServiceImpl(
                 if (updatedVehicle.cameraId != null)
                     it.cameraId = updatedVehicle.cameraId
 
-                it.stayDuration = Date().time - it.timestamp!!.time / 1000 // Calculate stay duration in seconds
+                val now = LocalDateTime.now()
+                val duration = Duration.between(it.timestamp, now)
+
+                it.stayDuration = duration.seconds // Update stayDuration in seconds
+                it.stayDurationFormatted = formatDurationCompact(it.timestamp!!, now)
                 this.vehicleCrud.save(it)
             }
-            .then()
+            .map { VehicleBoundary(it) }
             .log()
     }
 
@@ -151,4 +156,22 @@ class VehicleServiceImpl(
         return vehicleCrud
             .deleteAll()
     }
+}
+
+fun formatDurationCompact(from: LocalDateTime, to: LocalDateTime): String {
+    val duration = Duration.between(from, to)
+    val totalSeconds = duration.seconds
+
+    val days = totalSeconds / (24 * 3600)
+    val hours = (totalSeconds % (24 * 3600)) / 3600
+    val minutes = (totalSeconds % 3600) / 60
+    val seconds = totalSeconds % 60
+
+    val parts = mutableListOf<String>()
+    if (days > 0) parts.add("${days}d")
+    if (hours > 0) parts.add("${hours}h")
+    if (minutes > 0) parts.add("${minutes}m")
+    if (seconds > 0 || parts.isEmpty()) parts.add("${seconds}s")
+
+    return parts.joinToString(" ")
 }

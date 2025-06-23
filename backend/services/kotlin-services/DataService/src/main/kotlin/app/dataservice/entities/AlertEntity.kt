@@ -2,7 +2,7 @@ package app.dataservice.entities
 
 import org.springframework.data.annotation.Id
 import org.springframework.data.mongodb.core.mapping.Document
-import java.util.*
+import java.time.LocalDateTime
 
 @Document (collection = "Alerts")
 class AlertEntity(
@@ -11,7 +11,7 @@ class AlertEntity(
     var type: String?,
     var severity: String?,
     var description: String?,
-    var timestamp: Date?,
+    var timestamp: LocalDateTime?,
     var vehicleEntity: VehicleEntity?
 ) {
     constructor(): this(null, null, null, null, null, null, null)

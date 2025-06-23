@@ -1,7 +1,7 @@
 package app.dataservice.boundaries
 
 import app.dataservice.entities.VehicleEntity
-import java.util.Date
+import java.time.LocalDateTime
 
 class VehicleBoundary(
     var id: String?,
@@ -14,8 +14,9 @@ class VehicleBoundary(
     var colorProb: Float?,
     var imageUrl: String?,
     var description: String?,
-    var timestamp: Date?,
-    var stayDuration: Long?,
+    var timestamp: LocalDateTime?,
+    var stayDuration: Long?, // in seconds
+    var stayDurationFormatted: String?,
     var top: Int?,
     var left: Int?,
     var width: Int?,
@@ -23,7 +24,7 @@ class VehicleBoundary(
     var latitude: Float?,
     var longitude: Float?
 ) {
-    constructor(): this(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)
+    constructor(): this(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)
 
     constructor(vehicleEntity: VehicleEntity): this(){
         this.id = vehicleEntity.id
@@ -38,6 +39,7 @@ class VehicleBoundary(
         this.description = vehicleEntity.description
         this.timestamp = vehicleEntity.timestamp
         this.stayDuration = vehicleEntity.stayDuration
+        this.stayDurationFormatted = vehicleEntity.stayDurationFormatted
         this.top = vehicleEntity.top
         this.left = vehicleEntity.left
         this.width = vehicleEntity.width
@@ -61,6 +63,7 @@ class VehicleBoundary(
         vehicleEntity.description = description
         vehicleEntity.timestamp = timestamp
         vehicleEntity.stayDuration = stayDuration
+        vehicleEntity.stayDurationFormatted = stayDurationFormatted
         vehicleEntity.top = top
         vehicleEntity.left = left
         vehicleEntity.width = width
@@ -85,6 +88,7 @@ class VehicleBoundary(
                 " description=$description," +
                 " timestamp=$timestamp," +
                 " stayDuration=$stayDuration," +
+                " stayDurationFormatted=$stayDurationFormatted," +
                 " top=$top," +
                 " left=$left," +
                 " width=$width," +
