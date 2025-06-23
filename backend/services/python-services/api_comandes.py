@@ -189,92 +189,17 @@ def demo_work(image_upload, models, flag=0):
     detecting vehicles, blurring faces, and detecting car damages.
     It uses the provided models for each step.
     """
-    name = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    base_path = os.path.dirname(os.path.abspath(__file__))
-    location_name = os.path.join(base_path, "image_output", f"{name}.png")
-    vehicle_model = models.get("vehicle")
-    face_blur_model = models.get("face_blur")
-    car_damage_model = models.get("car_damage")
     camera = models.get("camera")
-    if not vehicle_model or not face_blur_model or not car_damage_model or not camera:
-        raise HTTPException(status_code=500, detail="Models are not initialized.")
-    # Capture an image from the camera
     if flag == 1:
         camera_name = camera.capture_image()
         if not camera_name:
             raise HTTPException(status_code=500, detail="Camera is not working.")
-        image_path = camera_name["name"]
+        image = camera_name["image"]
     else:
         image = Image.open(io.BytesIO(image_upload)).convert("RGB")
         new_width, new_height = 1280, 720
         image = image.resize((new_width, new_height))
-        cv2.imwrite(location_name, cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR))
-        image_path = location_name
-    # detect vehicles in the captured image
-    vehicle_results = vehicle_model.objectDetect(image_path).get("vehicles")
-    img = cv2.imread(location_name)
-    full_list = []
-    for vehicle in vehicle_results:
-        rect = vehicle.get("rect")
-        car_img = img[
-            int(rect["top"]) : int(rect["top"]) + int(rect["height"]),
-            int(rect["left"]) : int(rect["left"]) + int(rect["width"]),
-        ]
-        car_damage_results = car_damage_model(car_img)
-        if not car_damage_results:
-            raise HTTPException(status_code=500, detail="Car damage detection failed.")
-        v = {
-            "id": 0,
-            "cameraId": "684928ac8c23717f386e8191",
-            "type": str(vehicle.get("object")),
-            "manufacturer": str(vehicle.get("make")),
-            "color": str(vehicle.get("color")),
-            "typeProb": float(vehicle.get("object_prob", 0)),
-            "manufacturerProb": float(vehicle.get("make_prob", 0)),
-            "colorProb": float(vehicle.get("color_prob", 0)),
-            "imageUrl": "none",  # str(encode_image_to_base64(car_img)),
-            "description": str(car_damage_results),
-            "timestamp": 0,
-            "stayDuration": 0,
-            "top": int(rect["top"]),
-            "left": int(rect["left"]),
-            "width": int(rect["width"]),
-            "height": int(rect["height"]),
-            "latitude": round(float(rect["top"]) + (float(rect["height"]) / 2), 3),
-            "longitude": round(float(rect["left"]) + (float(rect["width"]) / 2), 3),
-        }
-
-        # Create a vehicle in a database
-        create_vehicle(v)  # can be problem be careful
-
-        # combined_result = (vehicle, car_damage_results)
-        full_list.append(v)
-    # Draw bounding boxes and probabilities on the image
-    for vehicle in vehicle_results:
-        rect = vehicle.get("rect")
-        object = vehicle.get("object", 0)
-        object_prob = vehicle.get("object_prob", 0)
-        color = vehicle.get("color", 0)
-        color_prob = vehicle.get("color_prob", 0)
-        make = vehicle.get("make", 0)
-        make_prob = vehicle.get("make_prob", 0)
-        label = f"{object} {float(object_prob):.2f} {make} {float(make_prob):.2f} {color} {float(color_prob):.2f}"
-        x, y, w, h = (
-            int(rect["left"]),
-            int(rect["top"]),
-            int(rect["width"]),
-            int(rect["height"]),
-        )
-        cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 2)
-        cv2.putText(
-            img, label, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 255, 0), 3
-        )
-
-    # output_image_path = f"image_output/{name}_detected.png"
-    output_image_path = os.path.join(base_path, "image_output", f"{name}_detected.png")
-    cv2.imwrite(output_image_path, img)
-    # Blur faces in the captured image
-    face_blur_model.blur_faces(output_image_path, output_image_path)
+    full_list = process_image(image, models).get("vehicles", [])
     compare_all_vehicles_from_db(full_list)
     return {
         "vehicles": full_list,
