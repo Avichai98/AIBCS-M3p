@@ -13,7 +13,14 @@ import httpx
 import uvicorn
 import base64
 import json
-from api_comandes import compare_vehicles, build, process_image, start, stop
+from api_comandes import (
+    compare_vehicles,
+    build,
+    process_image,
+    start,
+    stop,
+    demo_work,
+)
 
 import traceback
 
@@ -64,8 +71,17 @@ async def process_image_demo(file: UploadFile = File(...)):
 
 
 @app.post("/demo_work")
-async def demo_work_flow():
-    pass
+async def demo_work_flow(file1: UploadFile = File(None)):
+    global models
+    flag = 0
+    try:
+        file_content = await file1.read() if file1 is not None else None
+        if file_content is None:
+            flag = 1
+        demo_work(file_content, models, flag=flag)
+    except Exception as e:
+        tb = traceback.format_exc()
+        raise HTTPException(status_code=500, detail=f"{str(e)}\nLocation:\n{tb}")
 
 
 def encode_image_to_base64(image):
