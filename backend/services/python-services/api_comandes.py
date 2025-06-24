@@ -279,7 +279,7 @@ def compare_vehicles_from_files(db_vehicle_data, image_vehicle_data):
 
 def compare_vehicles(db_vehicle, image_vehicle, weights=None):
     """
-    Compare two vehicles and return similarity score (0–100%).
+    Compare two vehicles and return similarity score (0-100%).
     Includes type, manufacturer, color, bbox, and optional damage.
 
     :param db_vehicle: dict from database
@@ -296,20 +296,24 @@ def compare_vehicles(db_vehicle, image_vehicle, weights=None):
         return max((prob1 + prob2) / 2.0, min_score)
 
     def get_bbox(vehicle):
-        l, t = vehicle["left"], vehicle["top"]
-        r, b = l + vehicle["width"], t + vehicle["height"]
+        l, t = vehicle.get("left", 0), vehicle.get("top", 0)
+        r, b = l + vehicle.get("width", 0), t + vehicle.get("height", 0)
         return {"left": l, "top": t, "right": r, "bottom": b}
 
     def bbox_iou(box1, box2):
-        xA = max(box1["left"], box2["left"])
-        yA = max(box1["top"], box2["top"])
-        xB = min(box1["right"], box2["right"])
-        yB = min(box1["bottom"], box2["bottom"])
+        xA = max(box1.get("left", 0), box2.get("left", 0))
+        yA = max(box1.get("top", 0), box2.get("top", 0))
+        xB = min(box1.get("right", 0), box2.get("right", 0))
+        yB = min(box1.get("bottom", 0), box2.get("bottom", 0))
         inter_w = max(0, xB - xA)
         inter_h = max(0, yB - yA)
         inter_area = inter_w * inter_h
-        area1 = (box1["right"] - box1["left"]) * (box1["bottom"] - box1["top"])
-        area2 = (box2["right"] - box2["left"]) * (box2["bottom"] - box2["top"])
+        area1 = (box1.get("right", 0) - box1.get("left", 0)) * (
+            box1.get("bottom", 0) - box1.get("top", 0)
+        )
+        area2 = (box2.get("right", 0) - box2.get("left", 0)) * (
+            box2.get("bottom", 0) - box2.get("top", 0)
+        )
         union_area = area1 + area2 - inter_area + 1e-6
         iou = inter_area / union_area
         return min(1.0, max(0.0, iou))
@@ -474,21 +478,31 @@ def compare_all_vehicles_from_db(detected_vehicles):
         raise HTTPException(
             status_code=404, detail="No vehicles found in the database."
         )
+    output = []
+    if vehicles is not None:
+        for detected in detected_vehicles:
+            match_found = False
+            for stored in vehicles:
+                score = compare_vehicles(
+                    stored, detected
+                )  # uses the function defined earlier
+                output.append(
+                    {
+                        "db_vehicle": stored,
+                        "detected_vehicle": detected,
+                        "score": score,
+                    }
+                )
+                if score >= 70:
+                    # Update the stored vehicle with the detected one
+                    update_vehicle(stored)
+                    match_found = True
+                    break
 
-    for detected in detected_vehicles:
-        match_found = False
-        for stored in vehicles:
-            score = compare_vehicles(
-                stored, detected
-            )  # uses the function defined earlier
-            if score > 70:
-                # Update the stored vehicle with the detected one
-                update_vehicle(stored)
-                match_found = True
-                break
-
-        if not match_found:
+            if not match_found:
+                create_vehicle(detected)
+    else:
+        output = {"DB empty": detected_vehicles}
+        for detected in detected_vehicles:
             create_vehicle(detected)
-    return None
-
-
+    return output
