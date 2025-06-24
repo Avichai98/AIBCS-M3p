@@ -31,7 +31,7 @@ sys.path.append(
     os.path.join(os.path.dirname(__file__), "Damaged-Car-parts-prediction-Model")
 )
 from car_parts import set_detection
-from kafka_queue import create_vehicle
+from kafka_queue import create_vehicle, update_vehicle
 
 
 def build():
@@ -144,10 +144,6 @@ def process_image(image, models):
                 "latitude": round(float(rect["top"]) + (float(rect["height"]) / 2), 3),
                 "longitude": round(float(rect["left"]) + (float(rect["width"]) / 2), 3),
             }
-
-            # Create a vehicle in a database
-            # create_vehicle(v)  # can be problem be careful
-            create_vehicle(v)
 
             # combined_result = (vehicle, car_damage_results)
             full_list.append(v)
@@ -291,14 +287,6 @@ def compare_vehicles(db_vehicle, image_vehicle, weights=None):
     :param weights: dict with feature weights
     :return: float similarity score
     """
-    # if weights is None:
-    #     weights = {
-    #         "type": 0.3,
-    #         "manufacturer": 0.15,
-    #         "color": 0.3,
-    #         "bbox": 0.2,
-    #         "damage": 0.05,
-    #     }
 
     def match_score(
         val1, val2, prob1, prob2, min_score=0.0
@@ -486,11 +474,21 @@ def compare_all_vehicles_from_db(detected_vehicles):
         raise HTTPException(
             status_code=404, detail="No vehicles found in the database."
         )
+
     for detected in detected_vehicles:
+        match_found = False
         for stored in vehicles:
             score = compare_vehicles(
                 stored, detected
             )  # uses the function defined earlier
             if score > 70:
-                # increase the total time by 1 second for each match
-                detected["total_time"] += 1
+                # Update the stored vehicle with the detected one
+                update_vehicle(stored)
+                match_found = True
+                break
+
+        if not match_found:
+            create_vehicle(detected)
+    return None
+
+
