@@ -279,7 +279,7 @@ def compare_vehicles_from_files(db_vehicle_data, image_vehicle_data):
 
 def compare_vehicles(db_vehicle, image_vehicle, weights=None):
     """
-    Compare two vehicles and return similarity score (0–100%).
+    Compare two vehicles and return a similarity score (0–100%).
     Includes type, manufacturer, color, bbox, and optional damage.
 
     :param db_vehicle: dict from database
@@ -463,17 +463,20 @@ def compare_all_vehicles_from_db(detected_vehicles):
     url = "http://data-management-service:8080/vehicles/getVehicles"
     try:
         response = httpx.get(url)
-        if response.status_code != 200:
+        if response.status_code == 404:
+            print("No vehicles found in the database.")
+            vehicles = []
+
+        elif response.status_code  != 200:
             print(f"Failed to fetch vehicles: {response.text}")
-            return None
-        vehicles = response.json()
+            raise HTTPException(
+                status_code=500, detail="Failed to fetch vehicles from database."
+            )
+        else:
+            vehicles = response.json()
     except Exception as e:
         print(f"Error fetching vehicles: {e}")
         return None
-    if not vehicles:
-        raise HTTPException(
-            status_code=404, detail="No vehicles found in the database."
-        )
 
     for detected in detected_vehicles:
         match_found = False
@@ -481,7 +484,8 @@ def compare_all_vehicles_from_db(detected_vehicles):
             score = compare_vehicles(
                 stored, detected
             )  # uses the function defined earlier
-            if score > 70:
+            print(f"Comparing {stored} with {detected}, score: {score}")
+            if score > 10:
                 # Update the stored vehicle with the detected one
                 update_vehicle(stored)
                 match_found = True
