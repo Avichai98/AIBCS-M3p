@@ -467,37 +467,33 @@ def compare_all_vehicles_from_db(detected_vehicles):
     url = "http://data-management-service:8080/vehicles/getVehicles"
     try:
         response = httpx.get(url)
-        if response.status_code != 200:
+        if response.status_code == 404:
+            print("No vehicles found in the database.")
+            vehicles = []
+
+        elif response.status_code  != 200:
             print(f"Failed to fetch vehicles: {response.text}")
-            return None
-        vehicles = response.json()
+            raise HTTPException(
+                status_code=500, detail="Failed to fetch vehicles from database."
+            )
+        else:
+            vehicles = response.json()
     except Exception as e:
         print(f"Error fetching vehicles: {e}")
         return None
-    if not vehicles:
-        raise HTTPException(
-            status_code=404, detail="No vehicles found in the database."
-        )
-    output = []
-    if vehicles is not None:
-        for detected in detected_vehicles:
-            match_found = False
-            for stored in vehicles:
-                score = compare_vehicles(
-                    stored, detected
-                )  # uses the function defined earlier
-                output.append(
-                    {
-                        "db_vehicle": stored,
-                        "detected_vehicle": detected,
-                        "score": score,
-                    }
-                )
-                if score >= 70:
-                    # Update the stored vehicle with the detected one
-                    update_vehicle(stored)
-                    match_found = True
-                    break
+
+    for detected in detected_vehicles:
+        match_found = False
+        for stored in vehicles:
+            score = compare_vehicles(
+                stored, detected
+            )  # uses the function defined earlier
+            print(f"Comparing {stored} with {detected}, score: {score}")
+            if score > 10:
+                # Update the stored vehicle with the detected one
+                update_vehicle(stored)
+                match_found = True
+                break
 
             if not match_found:
                 create_vehicle(detected)
