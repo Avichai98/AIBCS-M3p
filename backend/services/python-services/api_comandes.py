@@ -146,7 +146,7 @@ def process_image(image, models):
             }
 
             # Create a vehicle in a database
-            #create_vehicle(v)  # can be problem be careful
+            # create_vehicle(v)  # can be problem be careful
             create_vehicle(v)
 
             # combined_result = (vehicle, car_damage_results)
@@ -491,6 +491,6 @@ def compare_all_vehicles_from_db(detected_vehicles):
             score = compare_vehicles(
                 stored, detected
             )  # uses the function defined earlier
-            if score > 0.7:
+            if score > 70:
                 # increase the total time by 1 second for each match
                 detected["total_time"] += 1
