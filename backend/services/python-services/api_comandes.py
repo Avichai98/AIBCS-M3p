@@ -199,10 +199,8 @@ def demo_work(image_upload, models, flag=0):
         new_width, new_height = 1280, 720
         image = image.resize((new_width, new_height))
     full_list = process_image(image, models).get("vehicles", [])
-    compare_all_vehicles_from_db(full_list)
-    return {
-        "vehicles": full_list,
-    }
+    output = compare_all_vehicles_from_db(full_list)
+    return output
 
 
 def work(models):
@@ -345,14 +343,14 @@ def compare_vehicles(db_vehicle, image_vehicle, weights=None):
 
         # Get confidences
         type_conf = avg_confidence(
-            db_vehicle.get("type_prob", 0.0), image_vehicle.get("type_prob", 0.0)
+            db_vehicle.get("typeProb", 0.0), image_vehicle.get("typeProb", 0.0)
         )
         manu_conf = avg_confidence(
-            db_vehicle.get("manufacturer_prob", 0.0),
-            image_vehicle.get("manufacturer_prob", 0.0),
+            db_vehicle.get("manufacturerProb", 0.0),
+            image_vehicle.get("manufacturerProb", 0.0),
         )
         color_conf = avg_confidence(
-            db_vehicle.get("color_prob", 0.0), image_vehicle.get("color_prob", 0.0)
+            db_vehicle.get("colorProb", 0.0), image_vehicle.get("colorProb", 0.0)
         )
 
         total_conf = type_conf + manu_conf + color_conf
@@ -401,20 +399,20 @@ def compare_vehicles(db_vehicle, image_vehicle, weights=None):
     type_score = match_score(
         db_vehicle["type"],
         image_vehicle["type"],
-        db_vehicle.get("type_prob", 0.0),
-        image_vehicle.get("type_prob", 0.0),
+        db_vehicle.get("typeProb", 0.0),
+        image_vehicle.get("typeProb", 0.0),
     )
     manufacturer_score = match_score(
         db_vehicle["manufacturer"],
         image_vehicle["manufacturer"],
-        db_vehicle.get("manufacturer_prob", 0.0),
-        image_vehicle.get("manufacturer_prob", 0.0),
+        db_vehicle.get("manufacturerProb", 0.0),
+        image_vehicle.get("manufacturerProb", 0.0),
     )
     color_score = match_score(
         db_vehicle["color"],
         image_vehicle["color"],
-        db_vehicle.get("color_prob", 0.0),
-        image_vehicle.get("color_prob", 0.0),
+        db_vehicle.get("colorProb", 0.0),
+        image_vehicle.get("colorProb", 0.0),
     )
 
     # Bounding box IoU with soft boost
@@ -428,7 +426,9 @@ def compare_vehicles(db_vehicle, image_vehicle, weights=None):
     damage_score = damage_match(
         db_vehicle.get("details", {}), image_vehicle.get("details", {})
     )
-
+    print(
+        f"for total score: type: {type_score} weight: {weights['type']}, manufacturer: {manufacturer_score} weight: {weights['manufacturer']}, color: {color_score} weight: {weights['color']} bbox: {bbox_score} weight: {weights['bbox']} damage: {damage_score} weight: {weights['damage']}"
+    )
     # Final weighted total
     total_score = (
         weights["type"] * type_score
@@ -471,7 +471,7 @@ def compare_all_vehicles_from_db(detected_vehicles):
             print("No vehicles found in the database.")
             vehicles = []
 
-        elif response.status_code  != 200:
+        elif response.status_code != 200:
             print(f"Failed to fetch vehicles: {response.text}")
             raise HTTPException(
                 status_code=500, detail="Failed to fetch vehicles from database."
@@ -481,22 +481,46 @@ def compare_all_vehicles_from_db(detected_vehicles):
     except Exception as e:
         print(f"Error fetching vehicles: {e}")
         return None
+    # for detected in detected_vehicles:
+    #     match_found = False
+    #     for stored in vehicles:
+    #         score = compare_vehicles(
+    #             stored, detected
+    #         )  # uses the function defined earlier
+    #         print(f"Comparing {stored} with {detected}, score: {score}")
+    #         if score > 10:
+    #             # Update the stored vehicle with the detected one
+    #             update_vehicle(stored)
+    #             match_found = True
+    #             break
 
-    for detected in detected_vehicles:
-        match_found = False
-        for stored in vehicles:
-            score = compare_vehicles(
-                stored, detected
-            )  # uses the function defined earlier
-            print(f"Comparing {stored} with {detected}, score: {score}")
-            if score > 10:
-                # Update the stored vehicle with the detected one
-                update_vehicle(stored)
-                match_found = True
-                break
+    #     if not match_found:
+    #         create_vehicle(detected)
+    # return None
+    output = []
+    if vehicles is not None and len(vehicles) > 0:
+        for detected in detected_vehicles:
+            match_found = False
+            for stored in vehicles:
+                score = compare_vehicles(
+                    stored, detected
+                )  # uses the function defined earlier
+                print(f"Comparing {stored} with {detected}, score: {score}")
+                if score > 70:
+                    # Update the stored vehicle with the detected one
+                    output.append(
+                        {
+                            "db_vehicle": stored,
+                            "detected_vehicle": detected,
+                            "score": score,
+                        }
+                    )
+                    update_vehicle(stored)
+                    match_found = True
+                    break
 
-            if not match_found:
-                create_vehicle(detected)
+                if not match_found:
+                    create_vehicle(detected)
     else:
         output = {"DB empty": detected_vehicles}
         for detected in detected_vehicles:
