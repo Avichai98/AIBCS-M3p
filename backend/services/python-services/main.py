@@ -56,6 +56,7 @@ async def start_work():
 async def stop_work():
     stop()
 
+
 @app.put("/update_vehicle")
 async def update_vehicle_route(vehicle: dict):
     update_vehicle(vehicle)
@@ -84,7 +85,9 @@ async def demo_work_flow(file1: UploadFile = File(None)):
         file_content = await file1.read() if file1 is not None else None
         if file_content is None:
             flag = 1
-        demo_work(file_content, models, flag=flag)
+        output = demo_work(file_content, models, flag=flag)
+        return output
+
     except Exception as e:
         tb = traceback.format_exc()
         raise HTTPException(status_code=500, detail=f"{str(e)}\nLocation:\n{tb}")
