@@ -519,8 +519,8 @@ def compare_all_vehicles_from_db(detected_vehicles):
                     match_found = True
                     break
 
-                if not match_found:
-                    create_vehicle(detected)
+            if not match_found:
+                create_vehicle(detected)
     else:
         output = {"DB empty": detected_vehicles}
         for detected in detected_vehicles:
