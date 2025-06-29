@@ -165,7 +165,7 @@ def process_image(image, models):
             )
             cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 2)
             cv2.putText(
-                img, label, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 255, 0), 3
+                img, label, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2
             )
 
         # output_image_path = f"image_output/{name}_detected.png"
@@ -330,6 +330,7 @@ def compare_vehicles(db_vehicle, image_vehicle, weights=None):
             return 1.0
         # return 0.0
 
+    # TODO add the image location to the dynamic weights
     def compute_dynamic_weights(db_vehicle, image_vehicle, base_total_weight=0.8):
         """
         Dynamically compute weights for type, manufacturer, and color based on average confidences.
@@ -352,23 +353,31 @@ def compare_vehicles(db_vehicle, image_vehicle, weights=None):
         color_conf = avg_confidence(
             db_vehicle.get("colorProb", 0.0), image_vehicle.get("colorProb", 0.0)
         )
-
         total_conf = type_conf + manu_conf + color_conf
+        bbox_weight = 1.0 - (total_conf / 3.0)
+        bbox_weight_raw = min(max(bbox_weight, 0.0), 1.0)
 
         if total_conf == 0:
             # fallback to equal weights
             return {
-                "type": base_total_weight / 3,
-                "manufacturer": base_total_weight / 3,
-                "color": base_total_weight / 3,
+                "type": base_total_weight / 4,
+                "manufacturer": base_total_weight / 4,
+                "color": base_total_weight / 4,
+                "bbox": base_total_weight / 4,
             }
-
-        # Normalize based on their proportional confidence
-        return {
-            "type": base_total_weight * (type_conf / total_conf),
-            "manufacturer": base_total_weight * (manu_conf / total_conf),
-            "color": base_total_weight * (color_conf / total_conf),
+        raw_weights = {
+            "type": type_conf,
+            "manufacturer": manu_conf,
+            "color": color_conf,
+            "bbox": bbox_weight_raw,
         }
+
+        # Normalize all weights so they sum to 1.0
+        total_raw = sum(raw_weights.values())
+        weights = {k: v / total_raw for k, v in raw_weights.items()}
+        print(f"Raw weights: {raw_weights}, Normalized weights: {weights}")
+        # Normalize based on their proportional confidence
+        return weights
 
     def compute_damage_weight(db_vehicle, image_vehicle, base_weight=0.05):
         # If both empty → it's still useful → return base weight
@@ -392,9 +401,9 @@ def compare_vehicles(db_vehicle, image_vehicle, weights=None):
         ) / 2
         return base_weight * min(avg_conf, 1.0)
 
-    weights = compute_dynamic_weights(db_vehicle, image_vehicle, base_total_weight=0.75)
+    weights = compute_dynamic_weights(db_vehicle, image_vehicle, base_total_weight=0.95)
     weights["damage"] = compute_damage_weight(db_vehicle, image_vehicle)
-    weights["bbox"] = 0.2
+
     # Compute scores
     type_score = match_score(
         db_vehicle["type"],
@@ -425,9 +434,6 @@ def compare_vehicles(db_vehicle, image_vehicle, weights=None):
     # Damage match (exact)
     damage_score = damage_match(
         db_vehicle.get("details", {}), image_vehicle.get("details", {})
-    )
-    print(
-        f"for total score: type: {type_score} weight: {weights['type']}, manufacturer: {manufacturer_score} weight: {weights['manufacturer']}, color: {color_score} weight: {weights['color']} bbox: {bbox_score} weight: {weights['bbox']} damage: {damage_score} weight: {weights['damage']}"
     )
     # Final weighted total
     total_score = (
@@ -506,7 +512,7 @@ def compare_all_vehicles_from_db(detected_vehicles):
                     stored, detected
                 )  # uses the function defined earlier
                 print(f"Comparing {stored} with {detected}, score: {score}")
-                if score > 70:
+                if score > 50:
                     # Update the stored vehicle with the detected one
                     output.append(
                         {
