@@ -10,9 +10,6 @@ from datetime import datetime
 app = FastAPI()
 
 
-# base_path = os.path.dirname(os.path.abspath(__file__))
-# path = os.path.join(base_path,"model.pt")
-# face_blur_model = YOLO(path)  # Update with your actual model path
 def load_model():
     paths = []
     base_path = os.path.dirname(os.path.abspath(__file__))
@@ -23,11 +20,10 @@ def load_model():
 
 class ImageBlur:
     def __init__(self, paths):
-        # self.model = model
         self.face_model = YOLO(paths[0])  # Face detection model
         self.license_plate_model = YOLO(paths[1])  # License plate detection model
 
-    def image_blur(self, image_path, name):
+    def image_blur(self, image_path):
         def bluring(results, output):
             for result in results:
                 for box in result.boxes:
@@ -50,5 +46,5 @@ class ImageBlur:
         plate_results = self.license_plate_model.predict(source=image_path)
         output = bluring(face_results, output)
         output = bluring(plate_results, output)
-        cv2.imwrite(name, output)
-        return name
+        cv2.imwrite(image_path, output)
+        return image_path

@@ -53,7 +53,6 @@ class Detection:
             classes_score = row[4:]
             _, _, _, max_idx = cv2.minMaxLoc(classes_score)
             class_id = max_idx[1]
-            # print(classes_score[class_id])
             if classes_score[class_id] > score:
                 confs.append(conf)
                 label = self.classes[int(class_id)]

@@ -10,8 +10,6 @@ from datetime import datetime
 from PIL import Image
 import io
 import httpx
-import uvicorn
-import base64
 import json
 
 sys.path.append(
@@ -32,9 +30,6 @@ sys.path.append(
 )
 from car_parts import set_detection
 from kafka_queue import create_vehicle, update_vehicle
-from datetime import datetime
-import pytz
-import tzlocal
 
 
 def build():
@@ -64,6 +59,7 @@ def build():
         except Exception as e:
             status["car_damage"] = f"error: {str(e)}"
         try:
+            # need to be port 0 when running on a raspberry pi
             models["camera"] = camera_use(1)
             status["capture_image"] = "ready"
         except Exception as e:
@@ -98,12 +94,10 @@ def stop():
     return {"message": "Stopped"}
 
 
-# async def process_image(file: UploadFile = File(...)):
 def process_image(image, models):
     try:
         # Automatically detect local timezone
-        local_tz = tzlocal.get_localzone()
-        now = datetime.now(local_tz)
+        now = datetime.now().astimezone()
         name = now.strftime("%Y-%m-%d_%H-%M-%S")
         base_path = os.path.dirname(os.path.abspath(__file__))
         folderPath = os.path.join(base_path, "image_output")
@@ -150,8 +144,6 @@ def process_image(image, models):
                 "latitude": round(float(rect["top"]) + (float(rect["height"]) / 2), 3),
                 "longitude": round(float(rect["left"]) + (float(rect["width"]) / 2), 3),
             }
-
-            # combined_result = (vehicle, car_damage_results)
             full_list.append(v)
         # Draw bounding boxes and probabilities on the image
         blurred_image = Image_blur_model.image_blur(location_name, location_name)
@@ -187,10 +179,7 @@ def process_image(image, models):
             base_path, "image_output", f"{name}_detected.png"
         )
         cv2.imwrite(output_image_path, new_image)
-        # Blur faces in the captured image
-        # blurred_image = Image_blur_model.image_blur(
-        #     output_image_path, output_image_path
-        # )
+
         return {
             "vehicles": full_list,
         }
@@ -238,8 +227,6 @@ def work(models):
         vehicle_results = vehicle_model.objectDetect(camera_name["name"]).get(
             "vehicles"
         )
-        # if not vehicle_results:
-        #   raise HTTPException(status_code=500, detail="Vehicle detection failed.")
         # Read the captured image
         img = cv2.imread(camera_name["name"])
         full_list = []
@@ -259,9 +246,7 @@ def work(models):
             combined_result = (vehicle, car_damage_results)
             full_list.append(combined_result)
         # Blur faces in the captured image
-        blurred_image = Image_blur_model.image_blur(
-            camera_name["name"], camera_name["name"]
-        )
+        Image_blur_model.image_blur(camera_name["name"])
         time.sleep(1)
 
 
@@ -464,19 +449,6 @@ def compare_vehicles(db_vehicle, image_vehicle, weights=None):
     return round(total_score * 100, 2)
 
 
-# def create_vehicl(v):
-#     url = "http://data-management-service:8080/vehicles/create"
-#     print(v)
-#     with httpx.AsyncClient() as client:
-#         response = client.post(url, json=v)
-#         if response.status_code != 200:
-#             print(f"Failed to create vehicle: {response.text}")
-#             raise HTTPException(
-#                 status_code=500, detail="Failed to create vehicle in database."
-#             )
-#     return response.json()
-
-
 def compare_all_vehicles_from_db(detected_vehicles):
     """
     Connect to MongoDB, fetch all stored vehicles, and compare with the detected ones.
@@ -504,7 +476,6 @@ def compare_all_vehicles_from_db(detected_vehicles):
     except Exception as e:
         print(f"Error fetching vehicles: {e}")
         return None
-    # TODO change the loop so that it will remove the matched vehicles from the list
     output = []
     if vehicles is not None and len(vehicles) > 0:
         for detected in detected_vehicles:
@@ -525,6 +496,7 @@ def compare_all_vehicles_from_db(detected_vehicles):
                     )
                     update_vehicle(stored)
                     match_found = True
+                    vehicles.remove(stored)  # Remove matched vehicle from list
                     break
 
             if not match_found:
@@ -534,3 +506,16 @@ def compare_all_vehicles_from_db(detected_vehicles):
         for detected in detected_vehicles:
             create_vehicle(detected)
     return output
+
+
+def remove_images():
+    base_path = os.path.dirname(os.path.abspath(__file__))
+    folderPath = os.path.join(base_path, "image_output")
+    if os.path.exists(folderPath):
+        for filename in os.listdir(folderPath):
+            file_path = os.path.join(folderPath, filename)
+            if os.path.isfile(file_path):
+                os.remove(file_path)
+        return {"status": "All images deleted from image_output"}
+    else:
+        return {"status": "image_output folder does not exist"}
