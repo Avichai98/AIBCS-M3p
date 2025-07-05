@@ -22,7 +22,7 @@ sys.path.append(
 from vehicle_detection import VehicleRecognitionModel, get_items
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "face-bluring"))
-from blur import FaceBlur, load_model
+from blur import ImageBlur, load_model
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "image-capture"))
 from image import camera_use
@@ -32,13 +32,16 @@ sys.path.append(
 )
 from car_parts import set_detection
 from kafka_queue import create_vehicle, update_vehicle
+from datetime import datetime
+import pytz
+import tzlocal
 
 
 def build():
     try:
         status = {
             "vehicle": "not initialized",
-            "face_blur": "not initialized",
+            "image_blur": "not initialized",
             "capture_image": "not ready",
             "car_damage": "not initialized",
         }
@@ -51,10 +54,10 @@ def build():
             status["vehicle"] = f"error: {str(e)}"
         try:
             model_path = load_model()
-            models["face_blur"] = FaceBlur(model_path)
-            status["face_blur"] = "initialized"
+            models["image_blur"] = ImageBlur(model_path)
+            status["image_blur"] = "initialized"
         except Exception as e:
-            status["face_blur"] = f"error: {str(e)}"
+            status["image_blur"] = f"error: {str(e)}"
         try:
             models["car_damage"] = set_detection()
             status["car_damage"] = "initialized"
@@ -70,7 +73,7 @@ def build():
             "status": status,
             "models": {
                 "vehicle": models.get("vehicle"),
-                "face_blur": models.get("face_blur"),
+                "image_blur": models.get("image_blur"),
                 "car_damage": models.get("car_damage"),
                 "camera": models.get("camera"),
             },
@@ -98,16 +101,19 @@ def stop():
 # async def process_image(file: UploadFile = File(...)):
 def process_image(image, models):
     try:
-        name = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        # Automatically detect local timezone
+        local_tz = tzlocal.get_localzone()
+        now = datetime.now(local_tz)
+        name = now.strftime("%Y-%m-%d_%H-%M-%S")
         base_path = os.path.dirname(os.path.abspath(__file__))
         folderPath = os.path.join(base_path, "image_output")
         if not os.path.exists(folderPath):
             os.makedirs(folderPath)
         location_name = os.path.join(folderPath, f"{name}.png")
         vehicle_model = models.get("vehicle")
-        face_blur_model = models.get("face_blur")
+        Image_blur_model = models.get("image_blur")
         car_damage_model = models.get("car_damage")
-        if not vehicle_model or not face_blur_model or not car_damage_model:
+        if not vehicle_model or not Image_blur_model or not car_damage_model:
             raise HTTPException(status_code=500, detail="Models are not initialized.")
         # Save the PIL image at location_name using cv2
         cv2.imwrite(location_name, cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR))
@@ -127,7 +133,7 @@ def process_image(image, models):
                 )
             v = {
                 "id": 0,
-                "cameraId": "6859134254232e6caafefef7",
+                "cameraId": "685b091fb0c11f1324fc5b9c",
                 "type": str(vehicle.get("object")),
                 "manufacturer": str(vehicle.get("make")),
                 "color": str(vehicle.get("color")),
@@ -148,6 +154,8 @@ def process_image(image, models):
             # combined_result = (vehicle, car_damage_results)
             full_list.append(v)
         # Draw bounding boxes and probabilities on the image
+        blurred_image = Image_blur_model.image_blur(location_name, location_name)
+        new_image = cv2.imread(blurred_image)
         for vehicle in vehicle_results:
             rect = vehicle.get("rect")
             object = vehicle.get("object", 0)
@@ -163,18 +171,26 @@ def process_image(image, models):
                 int(rect["width"]),
                 int(rect["height"]),
             )
-            cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 2)
+            cv2.rectangle(new_image, (x, y), (x + w, y + h), (0, 255, 0), 2)
             cv2.putText(
-                img, label, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2
+                new_image,
+                label,
+                (x, y - 10),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.6,
+                (0, 255, 0),
+                2,
             )
 
         # output_image_path = f"image_output/{name}_detected.png"
         output_image_path = os.path.join(
             base_path, "image_output", f"{name}_detected.png"
         )
-        cv2.imwrite(output_image_path, img)
+        cv2.imwrite(output_image_path, new_image)
         # Blur faces in the captured image
-        blurred_image = face_blur_model.blur_faces(output_image_path, output_image_path)
+        # blurred_image = Image_blur_model.image_blur(
+        #     output_image_path, output_image_path
+        # )
         return {
             "vehicles": full_list,
         }
@@ -200,6 +216,7 @@ def demo_work(image_upload, models, flag=0):
         image = image.resize((new_width, new_height))
     full_list = process_image(image, models).get("vehicles", [])
     output = compare_all_vehicles_from_db(full_list)
+
     return output
 
 
@@ -207,10 +224,10 @@ def work(models):
     # get all the models and check if they are not null
     global start_flag
     vehicle_model = models.get("vehicle")
-    face_blur_model = models.get("face_blur")
+    Image_blur_model = models.get("image_blur")
     car_damage_model = models.get("car_damage")
     camera = models.get("camera")
-    if not vehicle_model or not face_blur_model or not car_damage_model or not camera:
+    if not vehicle_model or not Image_blur_model or not car_damage_model or not camera:
         raise HTTPException(status_code=500, detail="Models are not initialized.")
     # Capture an image from the camera
     while start_flag == 1:
@@ -242,7 +259,7 @@ def work(models):
             combined_result = (vehicle, car_damage_results)
             full_list.append(combined_result)
         # Blur faces in the captured image
-        blurred_image = face_blur_model.blur_faces(
+        blurred_image = Image_blur_model.image_blur(
             camera_name["name"], camera_name["name"]
         )
         time.sleep(1)
@@ -487,22 +504,7 @@ def compare_all_vehicles_from_db(detected_vehicles):
     except Exception as e:
         print(f"Error fetching vehicles: {e}")
         return None
-    # for detected in detected_vehicles:
-    #     match_found = False
-    #     for stored in vehicles:
-    #         score = compare_vehicles(
-    #             stored, detected
-    #         )  # uses the function defined earlier
-    #         print(f"Comparing {stored} with {detected}, score: {score}")
-    #         if score > 10:
-    #             # Update the stored vehicle with the detected one
-    #             update_vehicle(stored)
-    #             match_found = True
-    #             break
-
-    #     if not match_found:
-    #         create_vehicle(detected)
-    # return None
+    # TODO change the loop so that it will remove the matched vehicles from the list
     output = []
     if vehicles is not None and len(vehicles) > 0:
         for detected in detected_vehicles:
@@ -512,7 +514,7 @@ def compare_all_vehicles_from_db(detected_vehicles):
                     stored, detected
                 )  # uses the function defined earlier
                 print(f"Comparing {stored} with {detected}, score: {score}")
-                if score > 50:
+                if score > 70:
                     # Update the stored vehicle with the detected one
                     output.append(
                         {
