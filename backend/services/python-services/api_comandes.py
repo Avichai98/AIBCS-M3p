@@ -148,6 +148,7 @@ def process_image(image, models):
             full_list.append(v)
         # Draw bounding boxes and probabilities on the image
         blurred_image = Image_blur_model.image_blur(location_name)
+        crop_image(blurred_image, full_list, folderPath)
         new_image = cv2.imread(blurred_image)
         for vehicle in vehicle_results:
             rect = vehicle.get("rect")
@@ -179,12 +180,27 @@ def process_image(image, models):
             base_path, "image_output", f"{name}_detected.png"
         )
         cv2.imwrite(output_image_path, new_image)
-
         return {
             "vehicles": full_list,
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error processing image: {str(e)}")
+
+
+def crop_image(image, full_list, folderPath):
+    image = cv2.imread(image)
+    for i, vehicle in enumerate(full_list):
+        x, y, w, h = (
+            vehicle.get("left", 0),
+            vehicle.get("top", 0),
+            vehicle.get("width", 0),
+            vehicle.get("height", 0),
+        )
+        cropped_image = image[y : y + h, x : x + w]
+        now = datetime.now().astimezone(pytz.timezone("Asia/Jerusalem"))
+        name = now.strftime("%Y-%m-%d_%H-%M-%S")
+        output_path = os.path.join(folderPath, f"{name}_cropped_{i}.png")
+        cv2.imwrite(output_path, cropped_image)
 
 
 def demo_work(image_upload, models, flag=0):
