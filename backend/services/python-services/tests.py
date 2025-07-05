@@ -144,7 +144,6 @@ def test_face_detection(file_path):
     return total, found
 
 
-
 import re
 import matplotlib.pyplot as plt
 
@@ -213,12 +212,10 @@ def analyze_model_predictions(file_path):
     plt.show()
 
 
-model_answers, color_answers = test_vehicle_recognition(
-    r"C:\Users\Tomer\Documents\ML\Confirmed_fronts\confirmed_fronts"
-)
+model_answers, color_answers = test_vehicle_recognition(r"dataSet_location")
 damage, whole = test_damage_detection(
-    r"C:\Users\Tomer\Documents\ML\archive\data1a\training\00-damage",
-    r"C:\Users\Tomer\Documents\ML\archive\data1a\training\01-whole",
+    r"dataSet_location",
+    r"dataSet_location",
 )
 file_path = "face_answers.txt"
 y, x = test_face_detection(file_path)

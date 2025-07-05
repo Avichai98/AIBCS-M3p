@@ -11,6 +11,7 @@ from PIL import Image
 import io
 import httpx
 import json
+import pytz
 
 sys.path.append(
     os.path.join(
@@ -97,7 +98,7 @@ def stop():
 def process_image(image, models):
     try:
         # Automatically detect local timezone
-        now = datetime.now().astimezone()
+        now = datetime.now().astimezone(pytz.timezone("Asia/Jerusalem"))
         name = now.strftime("%Y-%m-%d_%H-%M-%S")
         base_path = os.path.dirname(os.path.abspath(__file__))
         folderPath = os.path.join(base_path, "image_output")
@@ -146,7 +147,7 @@ def process_image(image, models):
             }
             full_list.append(v)
         # Draw bounding boxes and probabilities on the image
-        blurred_image = Image_blur_model.image_blur(location_name, location_name)
+        blurred_image = Image_blur_model.image_blur(location_name)
         new_image = cv2.imread(blurred_image)
         for vehicle in vehicle_results:
             rect = vehicle.get("rect")
@@ -174,7 +175,6 @@ def process_image(image, models):
                 2,
             )
 
-        # output_image_path = f"image_output/{name}_detected.png"
         output_image_path = os.path.join(
             base_path, "image_output", f"{name}_detected.png"
         )
@@ -212,41 +212,18 @@ def demo_work(image_upload, models, flag=0):
 def work(models):
     # get all the models and check if they are not null
     global start_flag
-    vehicle_model = models.get("vehicle")
-    Image_blur_model = models.get("image_blur")
-    car_damage_model = models.get("car_damage")
     camera = models.get("camera")
-    if not vehicle_model or not Image_blur_model or not car_damage_model or not camera:
-        raise HTTPException(status_code=500, detail="Models are not initialized.")
+    if not camera:
+        raise HTTPException(status_code=500, detail="camera is not initialized.")
     # Capture an image from the camera
     while start_flag == 1:
         camera_name = camera.capture_image()
         if not camera_name:
             raise HTTPException(status_code=500, detail="Camera is not working.")
-        # detect vehicles in the captured image
-        vehicle_results = vehicle_model.objectDetect(camera_name["name"]).get(
-            "vehicles"
-        )
-        # Read the captured image
-        img = cv2.imread(camera_name["name"])
-        full_list = []
-        for vehicle in vehicle_results:
-            rect = vehicle.get("rect")
-            car_img = img[
-                int(rect["top"]) : int(rect["top"]) + int(rect["height"]),
-                int(rect["left"]) : int(rect["left"]) + int(rect["width"]),
-            ]
-            # detects damages in the vehicle image
-            car_damage_results = car_damage_model(car_img)
-            if not car_damage_results:
-                raise HTTPException(
-                    status_code=500, detail="Car damage detection failed."
-                )
-            # Combine vehicle tuple and car_damage_results tuple
-            combined_result = (vehicle, car_damage_results)
-            full_list.append(combined_result)
-        # Blur faces in the captured image
-        Image_blur_model.image_blur(camera_name["name"])
+        new_width, new_height = 1280, 720
+        image = image.resize((new_width, new_height))
+        full_list = process_image(image, models).get("vehicles", [])
+        compare_all_vehicles_from_db(full_list)
         time.sleep(1)
 
 
@@ -265,7 +242,7 @@ def compare_vehicles_from_files(db_vehicle_data, image_vehicle_data):
         for db_v in db_vehicle:
             for img_v in image_vehicle:
                 score = compare_vehicles(db_v, img_v)
-                if score > 50:
+                if score > 70:
                     results.append(
                         {"db_vehicle": db_v, "image_vehicle": img_v, "score": score}
                     )
