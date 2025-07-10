@@ -20,6 +20,7 @@ from api_comandes import (
     start,
     stop,
     demo_work,
+    remove_images,
 )
 
 import traceback
@@ -28,12 +29,7 @@ from kafka_queue import update_vehicle
 
 start_flag = 0
 models = {}
-app = FastAPI(
-    title="AI Vehicle & Face Processing API",
-    docs_url="/docs",  # Swagger UI (default: /docs)
-    redoc_url="/redoc",  # ReDoc UI (default: /redoc)
-    openapi_url="/openapi.json",  # OpenAPI schema path (default: /openapi.json)
-)
+app = FastAPI(title="AI Vehicle & Face Processing API")
 
 
 @app.get("/build")
@@ -103,18 +99,9 @@ async def root():
     return RedirectResponse(url="/docs")
 
 
-@app.get("/delete_all_vehicles")
-async def delete_all_vehicles():
-    base_path = os.path.dirname(os.path.abspath(__file__))
-    folderPath = os.path.join(base_path, "image_output")
-    if os.path.exists(folderPath):
-        for filename in os.listdir(folderPath):
-            file_path = os.path.join(folderPath, filename)
-            if os.path.isfile(file_path):
-                os.remove(file_path)
-        return {"status": "All images deleted from image_output"}
-    else:
-        return {"status": "image_output folder does not exist"}
+@app.get("/delete_all_images")
+async def delete_all_images():
+    return remove_images()
 
 
 @app.post("/compare_vehicles")
@@ -134,7 +121,7 @@ async def compare_vehicles_endpoint(
         for db_v in db_vehicle:
             for img_v in image_vehicle:
                 score = compare_vehicles(db_v, img_v)
-                if score > 50:
+                if score > 70:
                     results.append(
                         {"db_vehicle": db_v, "image_vehicle": img_v, "score": score}
                     )
