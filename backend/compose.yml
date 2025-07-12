@@ -1,4 +1,4 @@
-version: '3.8'
+
 services:
 
   car-detection-service:
@@ -9,6 +9,7 @@ services:
       - "5000:5000"
     depends_on:
       - data-management-service
+      - kafka
 
   data-management-service:
     build:
@@ -56,13 +57,22 @@ services:
       - zookeeper
 
   mongodb:
-    image: 'mongo:latest'
+    image: 'mongo:8.0'
     ports:
       - '27017:27017'
     volumes:
       - mongodb_data:/data/db
 
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite:3.24.0
+    ports:
+      - "10000:10000"
+    volumes:
+      - azurite_data:/data
+    command: "azurite-blob --blobHost 0.0.0.0"
+
 
 volumes:
   mongodb_data:
+  azurite_data:
 
