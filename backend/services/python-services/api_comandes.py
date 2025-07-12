@@ -240,7 +240,7 @@ def crop_image(image, model):
     base_path = os.path.dirname(os.path.abspath(__file__))
     folderPath = os.path.join(base_path, "image_output")
     now = datetime.now().astimezone(pytz.timezone("Asia/Jerusalem"))
-    name = now.strftime("%Y-%m-%d_%H-%M-%S")
+    name = now.strftime("%Y-%m-%d_%H-%M-%S") + f"-{now.microsecond // 1000:03d}"
     output_path = os.path.join(folderPath, f"{name}.png")
     blur_image = model.image_blur(image)
     cv2.imwrite(output_path, blur_image)
