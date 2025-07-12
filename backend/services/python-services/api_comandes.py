@@ -60,8 +60,8 @@ def build():
         except Exception as e:
             status["car_damage"] = f"error: {str(e)}"
         try:
-            # need to be port 0 when running on a raspberry pi
-            models["camera"] = camera_use(1)
+            # need to be port 1 when not running on a raspberry pi
+            models["camera"] = camera_use(0)
             status["capture_image"] = "ready"
         except Exception as e:
             status["capture_image"] = f"error: {str(e)}"
@@ -97,27 +97,15 @@ def stop():
 
 def process_image(image, models):
     try:
-        # Automatically detect local timezone
-        now = datetime.now().astimezone(pytz.timezone("Asia/Jerusalem"))
-        name = now.strftime("%Y-%m-%d_%H-%M-%S")
-        base_path = os.path.dirname(os.path.abspath(__file__))
-        folderPath = os.path.join(base_path, "image_output")
-        if not os.path.exists(folderPath):
-            os.makedirs(folderPath)
-        location_name = os.path.join(folderPath, f"{name}.png")
         vehicle_model = models.get("vehicle")
-        Image_blur_model = models.get("image_blur")
         car_damage_model = models.get("car_damage")
-        if not vehicle_model or not Image_blur_model or not car_damage_model:
+        if not vehicle_model or not car_damage_model:
             raise HTTPException(status_code=500, detail="Models are not initialized.")
-        # Save the PIL image at location_name using cv2
-        cv2.imwrite(location_name, cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR))
-        vehicle_results = vehicle_model.objectDetect(location_name).get("vehicles")
-        img = cv2.imread(location_name)
+        vehicle_results = vehicle_model.objectDetect(image).get("vehicles")
         full_list = []
         for vehicle in vehicle_results:
             rect = vehicle.get("rect")
-            car_img = img[
+            car_img = image[
                 int(rect["top"]) : int(rect["top"]) + int(rect["height"]),
                 int(rect["left"]) : int(rect["left"]) + int(rect["width"]),
             ]
@@ -146,40 +134,6 @@ def process_image(image, models):
                 "longitude": round(float(rect["left"]) + (float(rect["width"]) / 2), 3),
             }
             full_list.append(v)
-        # Draw bounding boxes and probabilities on the image
-        blurred_image = Image_blur_model.image_blur(location_name)
-        crop_image(blurred_image, full_list, folderPath)
-        new_image = cv2.imread(blurred_image)
-        for vehicle in vehicle_results:
-            rect = vehicle.get("rect")
-            object = vehicle.get("object", 0)
-            object_prob = vehicle.get("object_prob", 0)
-            color = vehicle.get("color", 0)
-            color_prob = vehicle.get("color_prob", 0)
-            make = vehicle.get("make", 0)
-            make_prob = vehicle.get("make_prob", 0)
-            label = f"{object} {float(object_prob):.2f} {make} {float(make_prob):.2f} {color} {float(color_prob):.2f}"
-            x, y, w, h = (
-                int(rect["left"]),
-                int(rect["top"]),
-                int(rect["width"]),
-                int(rect["height"]),
-            )
-            cv2.rectangle(new_image, (x, y), (x + w, y + h), (0, 255, 0), 2)
-            cv2.putText(
-                new_image,
-                label,
-                (x, y - 10),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.6,
-                (0, 255, 0),
-                2,
-            )
-
-        output_image_path = os.path.join(
-            base_path, "image_output", f"{name}_detected.png"
-        )
-        cv2.imwrite(output_image_path, new_image)
         return {
             "vehicles": full_list,
         }
@@ -187,20 +141,110 @@ def process_image(image, models):
         raise HTTPException(status_code=500, detail=f"Error processing image: {str(e)}")
 
 
-def crop_image(image, full_list, folderPath):
-    image = cv2.imread(image)
-    for i, vehicle in enumerate(full_list):
-        x, y, w, h = (
-            vehicle.get("left", 0),
-            vehicle.get("top", 0),
-            vehicle.get("width", 0),
-            vehicle.get("height", 0),
-        )
-        cropped_image = image[y : y + h, x : x + w]
+# TODO remove crop image function from here
+def process_image2(image, models):
+    try:
+        # Automatically detect local timezone
         now = datetime.now().astimezone(pytz.timezone("Asia/Jerusalem"))
         name = now.strftime("%Y-%m-%d_%H-%M-%S")
-        output_path = os.path.join(folderPath, f"{name}_cropped_{i}.png")
-        cv2.imwrite(output_path, cropped_image)
+        base_path = os.path.dirname(os.path.abspath(__file__))
+        folderPath = os.path.join(base_path, "image_output")
+        if not os.path.exists(folderPath):
+            os.makedirs(folderPath)
+        location_name = os.path.join(folderPath, f"{name}.png")
+        vehicle_model = models.get("vehicle")
+        Image_blur_model = models.get("image_blur")
+        car_damage_model = models.get("car_damage")
+        if not vehicle_model or not Image_blur_model or not car_damage_model:
+            raise HTTPException(status_code=500, detail="Models are not initialized.")
+        # Save the PIL image at location_name using cv2
+        cv2.imwrite(location_name, cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR))
+        vehicle_results = vehicle_model.objectDetect(location_name).get("vehicles")
+        img = cv2.imread(location_name)
+        full_list = []
+        # Blur the image using the Image_blur_model
+        # blurred_image = Image_blur_model.image_blur(location_name)
+        # new_image = cv2.imread(blurred_image)
+        for vehicle in vehicle_results:
+            rect = vehicle.get("rect")
+            car_img = img[
+                int(rect["top"]) : int(rect["top"]) + int(rect["height"]),
+                int(rect["left"]) : int(rect["left"]) + int(rect["width"]),
+            ]
+            car_damage_results = car_damage_model(car_img)
+            if not car_damage_results:
+                raise HTTPException(
+                    status_code=500, detail="Car damage detection failed."
+                )
+            blurred_cropped_image = Image_blur_model.image_blur(car_img)
+            v = {
+                "id": 0,
+                "cameraId": "685b091fb0c11f1324fc5b9c",
+                "type": str(vehicle.get("object")),
+                "manufacturer": str(vehicle.get("make")),
+                "color": str(vehicle.get("color")),
+                "typeProb": float(vehicle.get("object_prob", 0)),
+                "manufacturerProb": float(vehicle.get("make_prob", 0)),
+                "colorProb": float(vehicle.get("color_prob", 0)),
+                "imageUrl": "none",  # str(encode_image_to_base64(car_img)),
+                "description": str(car_damage_results),
+                "stayDuration": 0,
+                "top": int(rect["top"]),
+                "left": int(rect["left"]),
+                "width": int(rect["width"]),
+                "height": int(rect["height"]),
+                "latitude": round(float(rect["top"]) + (float(rect["height"]) / 2), 3),
+                "longitude": round(float(rect["left"]) + (float(rect["width"]) / 2), 3),
+            }
+            full_list.append(v)
+            # remove this part is for image debugging
+            # # Draw rectangles and labels on the new image
+            # rect = vehicle.get("rect")
+            # object = vehicle.get("object", 0)
+            # object_prob = vehicle.get("object_prob", 0)
+            # color = vehicle.get("color", 0)
+            # color_prob = vehicle.get("color_prob", 0)
+            # make = vehicle.get("make", 0)
+            # make_prob = vehicle.get("make_prob", 0)
+            # label = f"{object} {float(object_prob):.2f} {make} {float(make_prob):.2f} {color} {float(color_prob):.2f}"
+            # x, y, w, h = (
+            #     int(rect["left"]),
+            #     int(rect["top"]),
+            #     int(rect["width"]),
+            #     int(rect["height"]),
+            # )
+            # cv2.rectangle(new_image, (x, y), (x + w, y + h), (0, 255, 0), 2)
+            # cv2.putText(
+            #     new_image,
+            #     label,
+            #     (x, y - 10),
+            #     cv2.FONT_HERSHEY_SIMPLEX,
+            #     0.6,
+            #     (0, 255, 0),
+            #     2,
+            # )
+        remove_image(location_name)  # Remove the original image after processing
+        # output_image_path = os.path.join(
+        #     base_path, "image_output", f"{name}_detected.png"
+        # )
+        # cv2.imwrite(output_image_path, new_image)
+        return {
+            "vehicles": full_list,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error processing image: {str(e)}")
+
+
+# TODO change the crop image function for single vehicle
+def crop_image(image, model):
+    base_path = os.path.dirname(os.path.abspath(__file__))
+    folderPath = os.path.join(base_path, "image_output")
+    now = datetime.now().astimezone(pytz.timezone("Asia/Jerusalem"))
+    name = now.strftime("%Y-%m-%d_%H-%M-%S") + f"-{now.microsecond // 1000:03d}"
+    output_path = os.path.join(folderPath, f"{name}.png")
+    blur_image = model.image_blur(image)
+    cv2.imwrite(output_path, blur_image)
+    return output_path
 
 
 def demo_work(image_upload, models, flag=0):
@@ -215,12 +259,16 @@ def demo_work(image_upload, models, flag=0):
         if not camera_name:
             raise HTTPException(status_code=500, detail="Camera is not working.")
         image = camera_name["image"]
+        # If image is PIL, convert to numpy array
+        if isinstance(image, Image.Image):
+            image = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
     else:
         image = Image.open(io.BytesIO(image_upload)).convert("RGB")
         new_width, new_height = 1280, 720
         image = image.resize((new_width, new_height))
+        image = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
     full_list = process_image(image, models).get("vehicles", [])
-    output = compare_all_vehicles_from_db(full_list)
+    output = compare_all_vehicles_from_db(full_list, models, image)
 
     return output
 
@@ -236,6 +284,7 @@ def work(models):
         camera_name = camera.capture_image()
         if not camera_name:
             raise HTTPException(status_code=500, detail="Camera is not working.")
+        image = camera_name["image"]
         new_width, new_height = 1280, 720
         image = image.resize((new_width, new_height))
         full_list = process_image(image, models).get("vehicles", [])
@@ -325,7 +374,6 @@ def compare_vehicles(db_vehicle, image_vehicle, weights=None):
             return 1.0
         # return 0.0
 
-    # TODO add the image location to the dynamic weights
     def compute_dynamic_weights(db_vehicle, image_vehicle, base_total_weight=0.8):
         """
         Dynamically compute weights for type, manufacturer, and color based on average confidences.
@@ -442,7 +490,7 @@ def compare_vehicles(db_vehicle, image_vehicle, weights=None):
     return round(total_score * 100, 2)
 
 
-def compare_all_vehicles_from_db(detected_vehicles):
+def compare_all_vehicles_from_db(detected_vehicles, models, image):
     """
     Connect to MongoDB, fetch all stored vehicles, and compare with the detected ones.
 
@@ -453,6 +501,13 @@ def compare_all_vehicles_from_db(detected_vehicles):
     :return: List of match results (dict with db_vehicle, detected_vehicle, score)
     """
     url = "http://data-management-service:8080/vehicles/getVehicles"
+    try:
+        Image_blur_model = models.get("image_blur")
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Image blur model not initialized: {str(e)}"
+        )
+
     try:
         response = httpx.get(url)
         if response.status_code == 404:
@@ -493,10 +548,24 @@ def compare_all_vehicles_from_db(detected_vehicles):
                     break
 
             if not match_found:
+                car_img = image[
+                    detected["top"] : detected["top"] + detected["height"],
+                    detected["left"] : detected["left"] + detected["width"],
+                ]
+                output_path = crop_image(car_img, Image_blur_model)
+                # blurred_cropped_image = Image_blur_model.image_blur(car_img)
+                detected["imageUrl"] = output_path
                 create_vehicle(detected)
     else:
         output = {"DB empty": detected_vehicles}
         for detected in detected_vehicles:
+            car_img = image[
+                detected["top"] : detected["top"] + detected["height"],
+                detected["left"] : detected["left"] + detected["width"],
+            ]
+            output_path = crop_image(car_img, Image_blur_model)
+            detected["imageUrl"] = output_path
+            # blurred_cropped_image = Image_blur_model.image_blur(car_img)
             create_vehicle(detected)
     return output
 
@@ -512,3 +581,14 @@ def remove_images():
         return {"status": "All images deleted from image_output"}
     else:
         return {"status": "image_output folder does not exist"}
+
+
+def remove_image(image_name):
+    base_path = os.path.dirname(os.path.abspath(__file__))
+    folderPath = os.path.join(base_path, "image_output")
+    file_path = os.path.join(folderPath, image_name)
+    if os.path.exists(file_path):
+        os.remove(file_path)
+        return {"status": f"{image_name} deleted from image_output"}
+    else:
+        return {"status": f"{image_name} does not exist in image_output"}
