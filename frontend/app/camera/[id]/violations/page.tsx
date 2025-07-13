@@ -259,7 +259,7 @@ export default function ViolationsPage() {
             let parsed: DamageDescription | null = null;
             try {
               parsed = JSON.parse(alert.vehicleBoundary.description);
-            } catch {}
+            } catch { }
 
             const showDamage = parsed && hasDamage(parsed);
 
@@ -269,12 +269,13 @@ export default function ViolationsPage() {
                   <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
                     {/* Vehicle Image */}
                     <div className="lg:col-span-1">
-                      <div className="relative aspect-[4/3] rounded-lg overflow-hidden bg-gray-100">
+                      <div className="relative w-full h-auto rounded-lg overflow-hidden bg-gray-100">
                         <Image
                           src={alert.vehicleBoundary.imageUrl || "/placeholder.svg"}
                           alt="Vehicle violation"
-                          fill
-                          className="object-cover"
+                          width={400}
+                          height={300}
+                          className="object-contain"
                         />
                       </div>
                     </div>

@@ -7,6 +7,7 @@ services:
       dockerfile: Dockerfile
     ports:
       - "5000:5000"
+    env_file: .env
     depends_on:
       - data-management-service
       - kafka
@@ -63,16 +64,5 @@ services:
     volumes:
       - mongodb_data:/data/db
 
-  azurite:
-    image: mcr.microsoft.com/azure-storage/azurite:3.24.0
-    ports:
-      - "10000:10000"
-    volumes:
-      - azurite_data:/data
-    command: "azurite-blob --blobHost 0.0.0.0"
-
-
 volumes:
   mongodb_data:
-  azurite_data:
-

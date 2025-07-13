@@ -12,6 +12,7 @@ import io
 import httpx
 import json
 import pytz
+from azure.storage.blob import BlobServiceClient
 
 sys.path.append(
     os.path.join(
@@ -116,7 +117,7 @@ def process_image(image, models):
                 )
             v = {
                 "id": 0,
-                "cameraId": "685b091fb0c11f1324fc5b9c",
+                "cameraId": "6859134254232e6caafefef7",
                 "type": str(vehicle.get("object")),
                 "manufacturer": str(vehicle.get("make")),
                 "color": str(vehicle.get("color")),
@@ -564,7 +565,9 @@ def compare_all_vehicles_from_db(detected_vehicles, models, image):
                 detected["left"] : detected["left"] + detected["width"],
             ]
             output_path = crop_image(car_img, Image_blur_model)
-            detected["imageUrl"] = output_path
+            filename = os.path.basename(output_path)
+            image_url = upload_to_azure(output_path, filename)
+            detected["imageUrl"] = image_url
             # blurred_cropped_image = Image_blur_model.image_blur(car_img)
             create_vehicle(detected)
     return output
@@ -592,3 +595,23 @@ def remove_image(image_name):
         return {"status": f"{image_name} deleted from image_output"}
     else:
         return {"status": f"{image_name} does not exist in image_output"}
+
+def get_blob_service():
+    connect_str = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
+    return BlobServiceClient.from_connection_string(connect_str)
+
+def upload_to_azure(image_path: str, blob_name: str, container_name: str = "images") -> str:
+    blob_service = get_blob_service()
+    container_client = blob_service.get_container_client(container_name)
+
+    try:
+        container_client.create_container()
+    except Exception:
+        pass  # Container already exists
+
+    with open(image_path, "rb") as data:
+        container_client.upload_blob(name=blob_name, data=data, overwrite=True)
+
+    # return the URL of the uploaded blob
+    return f"https://{blob_service.account_name}.blob.core.windows.net/{container_name}/{blob_name}"
+
