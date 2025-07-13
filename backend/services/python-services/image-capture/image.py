@@ -30,7 +30,7 @@ class camera_use:
             )
             base_path = os.path.dirname(os.path.abspath(__file__))
             location_name = os.path.join(base_path, "image_output", f"{name}.png")
-            imwrite(location_name, image)
+            # imwrite(location_name, image)
             return {
                 "image": image,
                 "name": location_name,
