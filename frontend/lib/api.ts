@@ -8,7 +8,7 @@ export interface VehicleBoundary {
   cameraId: string
   type: string
   manufacturer: string
-  color: String
+  color: string
   typeProb: number
   manufacturerProb: number
   colorProb: number
@@ -16,6 +16,11 @@ export interface VehicleBoundary {
   description: string
   timestamp: string
   stayDuration: number
+  stayDurationFormatted: string
+  top: number
+  left: number
+  width: number
+  height: number
   latitude: number
   longitude: number
 }

@@ -17,7 +17,7 @@ interface VehicleBoundary {
   cameraId: string
   type: string
   manufacturer: string
-  color: String
+  color: string
   typeProb: number
   manufacturerProb: number
   colorProb: number
@@ -25,6 +25,11 @@ interface VehicleBoundary {
   description: string
   timestamp: string
   stayDuration: number
+  stayDurationFormatted: string,
+  top: number,
+  left: number,
+  width: number,
+  height: number,
   latitude: number
   longitude: number
 }
@@ -39,6 +44,12 @@ interface Alert {
   vehicleBoundary: VehicleBoundary
 }
 
+type DamageDescription = {
+  boxes: any[];
+  confidences: number[];
+  classes: string[];
+};
+
 export default function ViolationsPage() {
   const [alerts, setAlerts] = useState<Alert[]>([])
   const [filteredAlerts, setFilteredAlerts] = useState<Alert[]>([])
@@ -48,6 +59,14 @@ export default function ViolationsPage() {
   const [camera, setCamera] = useState<any>(null)
   const router = useRouter()
   const params = useParams()
+
+  const hasDamage = (description: DamageDescription): boolean => {
+    return (
+      description.boxes.length > 0 ||
+      description.confidences.length > 0 ||
+      description.classes.length > 0
+    );
+  };
 
   useEffect(() => {
     const loadViolationsData = async () => {
@@ -93,26 +112,6 @@ export default function ViolationsPage() {
       loadFilteredAlerts()
     }
   }, [searchTerm, severityFilter, typeFilter, params.id])
-
-  const getCameraName = (id: string) => {
-    const names: { [key: string]: string } = {
-      CAM001: "Main Entrance",
-      CAM002: "Parking Lot A",
-      CAM003: "Loading Dock",
-      CAM004: "Visitor Parking",
-    }
-    return names[id] || "Unknown Camera"
-  }
-
-  const getCameraLocation = (id: string) => {
-    const locations: { [key: string]: string } = {
-      CAM001: "Building A - Front Gate",
-      CAM002: "North Parking Area",
-      CAM003: "Building B - Rear",
-      CAM004: "South Entrance",
-    }
-    return locations[id] || "Unknown Location"
-  }
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {
@@ -246,7 +245,7 @@ export default function ViolationsPage() {
               <div className="flex items-center">
                 <Clock className="h-6 w-6 text-blue-600 mr-2" />
                 <div>
-                  <p className="text-sm text-gray-600">Last Alert</p>
+                  <p className="text-sm font-medium">Last Alert</p>
                   <p className="text-sm font-medium">{filteredAlerts.length > 0 ? "2 min ago" : "No alerts"}</p>
                 </div>
               </div>
@@ -256,82 +255,95 @@ export default function ViolationsPage() {
 
         {/* Violations List */}
         <div className="space-y-4">
-          {filteredAlerts.map((alert) => (
-            <Card key={alert.id} className="hover:shadow-md transition-shadow">
-              <CardContent className="p-6">
-                <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                  {/* Vehicle Image */}
-                  <div className="lg:col-span-1">
-                    <div className="relative aspect-[4/3] rounded-lg overflow-hidden bg-gray-100">
-                      <Image
-                        src={alert.vehicleBoundary.imageUrl || "/placeholder.svg"}
-                        alt="Vehicle violation"
-                        fill
-                        className="object-cover"
-                      />
-                    </div>
-                  </div>
+          {filteredAlerts.map((alert) => {
+            let parsed: DamageDescription | null = null;
+            try {
+              parsed = JSON.parse(alert.vehicleBoundary.description);
+            } catch { }
 
-                  {/* Alert Details */}
-                  <div className="lg:col-span-2 space-y-4">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <div className="flex items-center space-x-2 mb-2">
-                          <Badge variant={getSeverityColor(alert.severity)}>{alert.severity}</Badge>
-                          <Badge variant="outline">{alert.type}</Badge>
-                        </div>
-                        <h3 className="text-lg font-semibold text-gray-900 mb-1">{alert.description}</h3>
-                        <p className="text-sm text-gray-600">Alert ID: {alert.id}</p>
+            const showDamage = parsed && hasDamage(parsed);
+
+            return (
+              <Card key={alert.id} className="hover:shadow-md transition-shadow">
+                <CardContent className="p-6">
+                  <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                    {/* Vehicle Image */}
+                    <div className="lg:col-span-1">
+                      <div className="relative w-full h-auto rounded-lg overflow-hidden bg-gray-100">
+                        <Image
+                          src={alert.vehicleBoundary.imageUrl || "/placeholder.svg"}
+                          alt="Vehicle violation"
+                          width={400}
+                          height={300}
+                          className="object-contain"
+                        />
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div className="flex items-center text-gray-600">
-                        <Clock className="h-4 w-4 mr-2" />
-                        {formatTimestamp(alert.timestamp)}
-                      </div>
-                      <div className="flex items-center text-gray-600">
-                        <MapPin className="h-4 w-4 mr-2" />
-                        {alert.vehicleBoundary.latitude.toFixed(3)}, {alert.vehicleBoundary.longitude.toFixed(3)}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Vehicle Details */}
-                  <div className="lg:col-span-1 space-y-3">
-                    <div className="flex items-center text-gray-700 mb-2">
-                      <Car className="h-4 w-4 mr-2" />
-                      <span className="font-medium">Vehicle Details</span>
-                    </div>
-                    <div className="space-y-2 text-sm">
-                      <div>
-                        <span className="text-gray-600">Type:</span>
-                        <span className="ml-2 font-medium">{alert.vehicleBoundary.type}</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-600">Make:</span>
-                        <span className="ml-2 font-medium">{alert.vehicleBoundary.manufacturer}</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-600">Color:</span>
-                        <span className="ml-2 font-medium">{alert.vehicleBoundary.color}</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-600">License:</span>
-                        <span className="ml-2 font-medium">{alert.vehicleBoundary.description}</span>
-                      </div>
-                      {alert.vehicleBoundary.stayDuration > 0 && (
+                    {/* Alert Details */}
+                    <div className="lg:col-span-2 space-y-4">
+                      <div className="flex items-start justify-between">
                         <div>
-                          <span className="text-gray-600">Duration:</span>
-                          <span className="ml-2 font-medium">{alert.vehicleBoundary.stayDuration} min</span>
+                          <div className="flex items-center space-x-2 mb-2">
+                            <Badge variant={getSeverityColor(alert.severity)}>{alert.severity}</Badge>
+                            <Badge variant="outline">{alert.type}</Badge>
+                          </div>
+                          <h3 className="text-lg font-semibold text-gray-900 mb-1">{alert.description}</h3>
+                          <p className="text-sm text-gray-600">Alert ID: {alert.id}</p>
                         </div>
-                      )}
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div className="flex items-center text-gray-600">
+                          <Clock className="h-4 w-4 mr-2" />
+                          {formatTimestamp(alert.timestamp)}
+                        </div>
+                        <div className="flex items-center text-gray-600">
+                          <MapPin className="h-4 w-4 mr-2" />
+                          {alert.vehicleBoundary.latitude.toFixed(3)}, {alert.vehicleBoundary.longitude.toFixed(3)}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Vehicle Details */}
+                    <div className="lg:col-span-1 space-y-3">
+                      <div className="flex items-center text-gray-700 mb-2">
+                        <Car className="h-4 w-4 mr-2" />
+                        <span className="font-medium">Vehicle Details</span>
+                      </div>
+                      <div className="space-y-2 text-sm">
+                        <div>
+                          <span className="text-gray-600">Type:</span>
+                          <span className="ml-2 font-medium">{alert.vehicleBoundary.type}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">Manufacturer:</span>
+                          <span className="ml-2 font-medium">{alert.vehicleBoundary.manufacturer}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">Color:</span>
+                          <span className="ml-2 font-medium">{alert.vehicleBoundary.color}</span>
+                        </div>
+                        {/* Conditionally show damage info only if it exists */}
+                        {showDamage && (
+                          <div>
+                            <span className="text-gray-600">Damage:</span>
+                            <span className="ml-2 font-medium">{JSON.stringify(parsed)}</span>
+                          </div>
+                        )}
+                        {alert.vehicleBoundary.stayDuration > 0 && (
+                          <div>
+                            <span className="text-gray-600">Duration:</span>
+                            <span className="ml-2 font-medium">{alert.vehicleBoundary.stayDurationFormatted} </span>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            )
+          })}
         </div>
 
         {filteredAlerts.length === 0 && (

@@ -6,6 +6,7 @@ import cv2
 import os
 import numpy as np
 from datetime import datetime
+import pytz
 
 app = FastAPI()
 
@@ -39,12 +40,24 @@ class ImageBlur:
                     output[y1:y2, x1:x2] = blurred
             return output
 
-        output = cv2.imread(image_path)
-        if output is None:
-            raise ValueError("Image not found or unable to load.")
+        if isinstance(image_path, np.ndarray):
+            output = image_path.copy()
+            # base_path = os.path.dirname(os.path.abspath(__file__))
+            # folderPath = os.path.join(base_path, "image_output")
+            # name = (
+            #     datetime.now()
+            #     .astimezone(pytz.timezone("Asia/Jerusalem"))
+            #     .strftime("%Y-%m-%d_%H-%M-%S"))
+            # output_path = os.path.join(folderPath, f"{name}.png")
+
+        else:
+            output = cv2.imread(image_path)
+            if output is None:
+                raise ValueError("Image not found or unable to load.")
+            output_path = image_path
         face_results = self.face_model.predict(source=image_path)
         plate_results = self.license_plate_model.predict(source=image_path)
         output = bluring(face_results, output)
         output = bluring(plate_results, output)
-        cv2.imwrite(image_path, output)
-        return image_path
+        # cv2.imwrite(output_path, output)
+        return output

@@ -71,12 +71,14 @@ class VehicleRecognitionModel:
         )
         self.LABELS = open(coco_names).read().strip().split("\n")
 
-    def objectDetect(self, image_path: str):
+    def objectDetect(self, image):
         objects = []
-        img = cv2.imread(image_path)
-        if img is None:
-            raise ValueError("Invalid or unreadable image")
-
+        if isinstance(image, str):
+            img = cv2.imread(image)
+            if img is None:
+                raise ValueError("Invalid or unreadable image")
+        else:
+            img = image.copy()
         classes, confidences, boxes = self.net.detect(
             img, confThreshold=0.1, nmsThreshold=0.4
         )
