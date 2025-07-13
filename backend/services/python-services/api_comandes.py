@@ -553,8 +553,10 @@ def compare_all_vehicles_from_db(detected_vehicles, models, image):
                     detected["left"] : detected["left"] + detected["width"],
                 ]
                 output_path = crop_image(car_img, Image_blur_model)
-                # blurred_cropped_image = Image_blur_model.image_blur(car_img)
+                filename = os.path.basename(output_path)
+                image_url = upload_to_azure(output_path, filename)
                 detected["imageUrl"] = output_path
+                remove_an_image(output_path)
                 create_vehicle(detected)
     else:
         output = {"DB empty": detected_vehicles}
@@ -567,7 +569,7 @@ def compare_all_vehicles_from_db(detected_vehicles, models, image):
             filename = os.path.basename(output_path)
             image_url = upload_to_azure(output_path, filename)
             detected["imageUrl"] = image_url
-            # blurred_cropped_image = Image_blur_model.image_blur(car_img)
+            remove_an_image(output_path)
             create_vehicle(detected)
     return output
 
@@ -590,13 +592,17 @@ def remove_an_image(image_path):
         os.remove(image_path)
         return {"status": f"{image_path} deleted from image_output"}
     else:
-        return {"status": f"{image_name} does not exist in image_output"}
+        return {"status": f"{image_path} does not exist in image_output"}
+
 
 def get_blob_service():
     connect_str = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
     return BlobServiceClient.from_connection_string(connect_str)
 
-def upload_to_azure(image_path: str, blob_name: str, container_name: str = "images") -> str:
+
+def upload_to_azure(
+    image_path: str, blob_name: str, container_name: str = "images"
+) -> str:
     blob_service = get_blob_service()
     container_client = blob_service.get_container_client(container_name)
 
@@ -610,4 +616,3 @@ def upload_to_azure(image_path: str, blob_name: str, container_name: str = "imag
 
     # return the URL of the uploaded blob
     return f"https://{blob_service.account_name}.blob.core.windows.net/{container_name}/{blob_name}"
-
