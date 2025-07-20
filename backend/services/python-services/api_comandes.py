@@ -13,6 +13,7 @@ import httpx
 import json
 import pytz
 from azure.storage.blob import BlobServiceClient
+from utils.auth_utils import get_auth_token
 
 sys.path.append(
     os.path.join(
@@ -510,7 +511,9 @@ def compare_all_vehicles_from_db(detected_vehicles, models, image):
         )
 
     try:
-        response = httpx.get(url)
+        token = get_auth_token()
+        headers = {"Authorization": f"Bearer {token}"}
+        response = httpx.get(url, headers=headers)
         if response.status_code == 404:
             print("No vehicles found in the database.")
             vehicles = []

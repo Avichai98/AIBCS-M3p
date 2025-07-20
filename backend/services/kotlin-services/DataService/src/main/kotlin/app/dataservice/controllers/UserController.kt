@@ -4,6 +4,7 @@ import app.dataservice.boundaries.LoginBoundary
 import app.dataservice.boundaries.LoginResponse
 import app.dataservice.boundaries.UserBoundary
 import app.dataservice.interfaces.UserService
+import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestParam
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 
+@SecurityRequirement(name = "BearerAuth")
 @RestController
 @RequestMapping("/users")
 class UserController(

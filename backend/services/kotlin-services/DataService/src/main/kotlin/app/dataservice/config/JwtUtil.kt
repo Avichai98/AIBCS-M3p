@@ -2,27 +2,39 @@ package app.dataservice.config
 
 import app.dataservice.entities.UserEntity
 import io.jsonwebtoken.Jwts
-import io.jsonwebtoken.SignatureAlgorithm
 import io.jsonwebtoken.security.Keys
 import org.springframework.stereotype.Component
 import java.util.*
 
 @Component
 class JwtUtil {
-    // Secret key for signing JWT tokens - keep this safe and don't expose publicly
-    private val jwtSecret = Keys.secretKeyFor(SignatureAlgorithm.HS256)
+    private val jwtSecret = System.getenv("JWT_SECRET")
+        ?: throw IllegalStateException("Missing JWT_SECRET environment variable")
 
-    // Generate JWT token based on user information
+    private val key = Keys.hmacShaKeyFor(jwtSecret.toByteArray())
+
     fun generateToken(user: UserEntity): String {
         val now = Date()
-        val expiryDate = Date(now.time + 3600000) // Token valid for 1 hour
-
+        val expiry = Date(now.time + 3600000)
         return Jwts.builder()
-            .setSubject(user.id.toString())
+            .setSubject(user.id)
             .setIssuedAt(now)
-            .setExpiration(expiryDate)
+            .setExpiration(expiry)
             .claim("email", user.email)
-            .signWith(jwtSecret)
+            .signWith(key)
             .compact()
     }
+
+    fun validateToken(token: String): Boolean = try {
+        getClaims(token)
+        true
+    } catch (e: Exception) {
+        false
+    }
+
+    fun getUserIdFromToken(token: String): String =
+        getClaims(token).subject
+
+    fun getClaims(token: String) =
+        Jwts.parserBuilder().setSigningKey(jwtSecret).build().parseClaimsJws(token).body
 }

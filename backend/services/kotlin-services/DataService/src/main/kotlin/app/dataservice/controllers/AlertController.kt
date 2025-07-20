@@ -2,6 +2,7 @@ package app.dataservice.controllers
 
 import app.dataservice.boundaries.AlertBoundary
 import app.dataservice.interfaces.AlertService
+import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import org.springframework.http.MediaType
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 
+@SecurityRequirement(name = "BearerAuth")
 @RestController
 @RequestMapping("/alerts")
 class AlertController(

@@ -24,24 +24,30 @@ class UserServiceImpl(
     override fun createUser(user: UserBoundary): Mono<UserBoundary> {
         return Mono.just(user)
             .flatMap {
-                if (user.firstName.isNullOrBlank() || user.lastName.isNullOrBlank() || user.mobile.isNullOrBlank()
-                    || user.username.isNullOrBlank()
-                )
+                if (user.firstName.isNullOrBlank() || user.lastName.isNullOrBlank() ||
+                    user.mobile.isNullOrBlank() || user.username.isNullOrBlank()
+                ) {
                     Mono.error(BadRequestException400("Required fields are missing"))
-                else if (!isValidEmail(user.email))
+                } else if (!isValidEmail(user.email)) {
                     Mono.error(BadRequestException400("Invalid email"))
-                else {
-                    user.id = null
-                    user.createdAt = LocalDateTime.now()
-
-                    Mono.just(it)
+                } else {
+                    userCrud.findByEmail(user.email!!)
+                        .flatMap<UserBoundary> {
+                            Mono.error(BadRequestException400("User with this email already exists"))
+                        }
+                        .switchIfEmpty(
+                            Mono.defer {
+                                user.id = null
+                                user.createdAt = LocalDateTime.now()
+                                userCrud.save(user.toEntity())
+                                    .map { UserBoundary(it) }
+                            }
+                        )
                 }
             }
-            .map { user.toEntity() }
-            .flatMap { this.userCrud.save(it) }
-            .map { UserBoundary(it) }
             .log()
     }
+
 
     override fun updateUser(
         id: String,
