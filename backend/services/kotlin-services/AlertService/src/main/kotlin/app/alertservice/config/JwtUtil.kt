@@ -1,11 +1,9 @@
-package app.dataservice.config
+package app.alertservice.config
 
-import app.dataservice.entities.UserEntity
 import io.jsonwebtoken.Jwts
 import io.jsonwebtoken.security.Keys
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
-import java.util.*
 
 @Component
 class JwtUtil(
@@ -13,18 +11,6 @@ class JwtUtil(
     jwtSecret: String
 ) {
     private val key = Keys.hmacShaKeyFor(jwtSecret.toByteArray())
-
-    fun generateToken(user: UserEntity): String {
-        val now = Date()
-        val expiry = Date(now.time + 3600000) // 1 hour
-        return Jwts.builder()
-            .setSubject(user.id)
-            .setIssuedAt(now)
-            .setExpiration(expiry)
-            .claim("email", user.email)
-            .signWith(key, io.jsonwebtoken.SignatureAlgorithm.HS384)
-            .compact()
-    }
 
     fun validateToken(token: String): Boolean = try {
         getClaims(token)

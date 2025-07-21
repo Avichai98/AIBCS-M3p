@@ -14,7 +14,7 @@ class JWTBearer(HTTPBearer):
                 payload = jwt.decode(
                     credentials.credentials,
                     os.getenv("JWT_SECRET"),
-                    algorithms=["HS256"]
+                    algorithms=["HS384"]
                 )
                 return payload
             except JWTError:
