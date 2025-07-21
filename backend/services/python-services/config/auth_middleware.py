@@ -1,7 +1,7 @@
 from fastapi import Request, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import jwt, JWTError
-from config.env_loader import get_jwt_secret
+import os
 
 class JWTBearer(HTTPBearer):
     def __init__(self, auto_error: bool = True):
@@ -13,7 +13,7 @@ class JWTBearer(HTTPBearer):
             try:
                 payload = jwt.decode(
                     credentials.credentials,
-                    get_jwt_secret(),
+                    os.getenv("JWT_SECRET"),
                     algorithms=["HS256"]
                 )
                 return payload

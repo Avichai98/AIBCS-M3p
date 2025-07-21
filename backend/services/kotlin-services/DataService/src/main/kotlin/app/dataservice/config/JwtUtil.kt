@@ -3,19 +3,20 @@ package app.dataservice.config
 import app.dataservice.entities.UserEntity
 import io.jsonwebtoken.Jwts
 import io.jsonwebtoken.security.Keys
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 import java.util.*
 
 @Component
-class JwtUtil {
-    private val jwtSecret = System.getenv("JWT_SECRET")
-        ?: throw IllegalStateException("Missing JWT_SECRET environment variable")
-
+class JwtUtil(
+    @Value("\${JWT_SECRET}")
+    jwtSecret: String
+) {
     private val key = Keys.hmacShaKeyFor(jwtSecret.toByteArray())
 
     fun generateToken(user: UserEntity): String {
         val now = Date()
-        val expiry = Date(now.time + 3600000)
+        val expiry = Date(now.time + 3600000) // 1 hour
         return Jwts.builder()
             .setSubject(user.id)
             .setIssuedAt(now)
@@ -36,5 +37,9 @@ class JwtUtil {
         getClaims(token).subject
 
     fun getClaims(token: String) =
-        Jwts.parserBuilder().setSigningKey(jwtSecret).build().parseClaimsJws(token).body
+        Jwts.parserBuilder()
+            .setSigningKey(key)
+            .build()
+            .parseClaimsJws(token)
+            .body
 }

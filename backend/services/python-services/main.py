@@ -27,6 +27,7 @@ from api_comandes import (
 import traceback
 from kafka_queue import update_vehicle
 from config.auth_middleware import JWTBearer
+from config.securitySchemes import custom_openapi
 
 
 start_flag = 0
@@ -41,6 +42,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.openapi = lambda: custom_openapi(app)
 @app.get("/build", dependencies=[Depends(JWTBearer())])
 def build_models():
     global models
