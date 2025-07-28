@@ -118,7 +118,7 @@ def process_image(image, models):
                 )
             v = {
                 "id": 0,
-                "cameraId": "6859134254232e6caafefef7",
+                "cameraId": "6884dd8be79f33241d1688ab",
                 "type": str(vehicle.get("object")),
                 "manufacturer": str(vehicle.get("make")),
                 "color": str(vehicle.get("color")),
@@ -181,7 +181,7 @@ def process_image2(image, models):
             blurred_cropped_image = Image_blur_model.image_blur(car_img)
             v = {
                 "id": 0,
-                "cameraId": "685b091fb0c11f1324fc5b9c",
+                "cameraId": "6884dd8be79f33241d1688ab",
                 "type": str(vehicle.get("object")),
                 "manufacturer": str(vehicle.get("make")),
                 "color": str(vehicle.get("color")),

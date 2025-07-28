@@ -4,6 +4,7 @@ import app.dataservice.boundaries.VehicleBoundary
 import app.dataservice.interfaces.VehicleService
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import org.springframework.http.MediaType
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -27,6 +28,7 @@ class VehicleController(
         consumes = [MediaType.APPLICATION_JSON_VALUE],
         produces = [MediaType.APPLICATION_JSON_VALUE]
     )
+    @PreAuthorize("hasRole('ADMIN') or hasRole('USER')")
     fun create(
         @RequestBody vehicle: VehicleBoundary
     ): Mono<VehicleBoundary>{
@@ -39,6 +41,7 @@ class VehicleController(
         consumes = [MediaType.APPLICATION_JSON_VALUE],
         produces = [MediaType.APPLICATION_JSON_VALUE]
     )
+    @PreAuthorize("hasRole('ADMIN') or hasRole('USER')")
     fun update(
         @PathVariable id: String,
         @RequestBody vehicle: VehicleBoundary
@@ -51,6 +54,7 @@ class VehicleController(
         path = ["/getVehicleById/{id}"],
         produces = [MediaType.APPLICATION_JSON_VALUE]
     )
+    @PreAuthorize("hasRole('ADMIN') or hasRole('USER')")
     fun getVehicleById(
         @PathVariable id: String
     ): Mono<VehicleBoundary>{
@@ -62,6 +66,7 @@ class VehicleController(
         path = ["/getVehicles"],
         produces = [MediaType.APPLICATION_JSON_VALUE, MediaType.TEXT_EVENT_STREAM_VALUE]
     )
+    @PreAuthorize("hasRole('ADMIN') or hasRole('USER')")
     fun getVehicles(
         @RequestParam(name = "page", required = false, defaultValue = "0") page: Int,
         @RequestParam(name = "size", required = false, defaultValue = "20") size: Int
@@ -75,6 +80,7 @@ class VehicleController(
         path = ["/getVehiclesByManufacturer/{manufacturer}"],
         produces = [MediaType.TEXT_EVENT_STREAM_VALUE]
     )
+    @PreAuthorize("hasRole('ADMIN')")
     fun getVehiclesByManufacturer(
         @PathVariable manufacturer: String,
         @RequestParam(name = "page", required = false, defaultValue = "0") page: Int,
@@ -88,6 +94,7 @@ class VehicleController(
         path = ["/getVehiclesByLatitudeAndLongitude/{latitude}/{longitude}"],
         produces = [MediaType.TEXT_EVENT_STREAM_VALUE]
     )
+    @PreAuthorize("hasRole('ADMIN')")
     fun getVehiclesByLatitudeAndLongitude(
         @PathVariable latitude: Double,
         @PathVariable longitude: Double,
@@ -102,6 +109,7 @@ class VehicleController(
         path = ["/getVehiclesByTimestamp/{timestampStr}"],
         produces = [MediaType.TEXT_EVENT_STREAM_VALUE]
     )
+    @PreAuthorize("hasRole('ADMIN')")
     fun getVehiclesByTimestamp(
         @PathVariable("timestampStr") timestampStr: String,
         @RequestParam(name = "page", required = false, defaultValue = "0") page: Int,
@@ -114,6 +122,7 @@ class VehicleController(
     @DeleteMapping(
         path = ["/delete/{id}"]
     )
+    @PreAuthorize("hasRole('ADMIN')")
     fun delete(@PathVariable id: String
     ): Mono<Void> {
         return this.vehicleService
@@ -123,6 +132,7 @@ class VehicleController(
     @DeleteMapping(
         path = ["/deleteAllVehicles"]
     )
+    @PreAuthorize("hasRole('ADMIN')")
     fun deleteAllVehicles(): Mono<Void>{
         return this.vehicleService
             .deleteAll()

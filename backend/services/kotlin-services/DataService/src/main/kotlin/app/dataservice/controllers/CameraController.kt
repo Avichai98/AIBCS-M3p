@@ -5,10 +5,13 @@ import app.dataservice.boundaries.CameraSchedule
 import app.dataservice.interfaces.CameraService
 import app.dataservice.scheduling.CameraScheduler
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
+import org.springframework.http.HttpHeaders
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.http.MediaType
+import org.springframework.http.server.reactive.ServerHttpRequest
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -30,6 +33,7 @@ class CameraController(
         consumes = [MediaType.APPLICATION_JSON_VALUE],
         produces = [MediaType.APPLICATION_JSON_VALUE]
     )
+    @PreAuthorize("hasRole('ADMIN')")
     fun create(
         @RequestBody camera: CameraBoundary
     ): Mono<CameraBoundary> {
@@ -37,28 +41,36 @@ class CameraController(
             .createCamera(camera)
     }
 
-    @PostMapping(
+    @GetMapping(
         path = ["/start"],
         produces = [MediaType.APPLICATION_JSON_VALUE],
     )
-    fun startCamera(): Mono<Void> {
+    @PreAuthorize("hasRole('ADMIN') or hasRole('USER')")
+    fun startCamera(request: ServerHttpRequest): Mono<Void> {
+        val authHeader = request.headers.getFirst(HttpHeaders.AUTHORIZATION)
+
         return this.cameraService
-            .startCamera()
+            .startCamera(authHeader!!)
+            .onErrorResume { error -> Mono.error(error) }
     }
 
-    @PostMapping(
+    @GetMapping(
         path = ["/stop"],
         produces = [MediaType.APPLICATION_JSON_VALUE],
     )
-    fun stopCamera(): Mono<Void> {
+    @PreAuthorize("hasRole('ADMIN') or hasRole('USER')")
+    fun stopCamera(request: ServerHttpRequest): Mono<Void> {
+        val authHeader = request.headers.getFirst(HttpHeaders.AUTHORIZATION)
         return this.cameraService
-            .stopCamera()
+            .stopCamera(authHeader!!)
+            .onErrorResume { error -> Mono.error(error) }
     }
 
     @PutMapping(
         path = ["/update/{id}"],
         consumes = [MediaType.APPLICATION_JSON_VALUE],
     )
+    @PreAuthorize("hasRole('ADMIN')")
     fun update(
         @PathVariable id: String,
         @RequestBody camera: CameraBoundary
@@ -68,6 +80,7 @@ class CameraController(
     }
 
     @PutMapping("/schedule/{id}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('USER')")
     fun updateCameraSchedule(
         @PathVariable id: String,
         @RequestBody schedule: CameraSchedule
@@ -84,6 +97,7 @@ class CameraController(
         path = ["/status/{id}"],
         consumes = [MediaType.APPLICATION_JSON_VALUE]
     )
+    @PreAuthorize("hasRole('ADMIN') or hasRole('USER')")
     fun updateCameraStatus(
         @PathVariable id: String,
         @RequestBody status: Boolean
@@ -93,6 +107,7 @@ class CameraController(
     }
 
     @GetMapping("/schedule/{id}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('USER')")
     fun getCameraSchedule(@PathVariable id: String): Mono<CameraSchedule> {
         return cameraService
             .getCameraSchedule(id)
@@ -102,6 +117,7 @@ class CameraController(
         path = ["/getCameraById/{id}"],
         produces = [MediaType.APPLICATION_JSON_VALUE]
     )
+    @PreAuthorize("hasRole('ADMIN') or hasRole('USER')")
     fun getCameraById(
         @PathVariable id: String
     ): Mono<CameraBoundary> {
@@ -113,6 +129,7 @@ class CameraController(
         path = ["/getCameras"],
         produces = [MediaType.APPLICATION_JSON_VALUE, MediaType.TEXT_EVENT_STREAM_VALUE]
     )
+    @PreAuthorize("hasRole('ADMIN')")
     fun getAllCameras(
         @RequestParam(name = "page", required = false, defaultValue = "0") page: Int,
         @RequestParam(name = "size", required = false, defaultValue = "20") size: Int
@@ -125,6 +142,7 @@ class CameraController(
         path = ["/getCamerasByEmail/{email}"],
         produces = [MediaType.APPLICATION_JSON_VALUE, MediaType.TEXT_EVENT_STREAM_VALUE]
     )
+    @PreAuthorize("hasRole('ADMIN') or hasRole('USER')")
     fun getCamerasByEmail(
         @PathVariable email: String,
         @RequestParam(name = "page", required = false, defaultValue = "0") page: Int,
@@ -139,14 +157,19 @@ class CameraController(
         path = ["/build"],
         produces = [MediaType.APPLICATION_JSON_VALUE]
     )
-    fun buildCamera(): Mono<Void> {
+    @PreAuthorize("hasRole('ADMIN') or hasRole('USER')")
+    fun buildCamera(request: ServerHttpRequest): Mono<Void> {
+        val authHeader = request.headers.getFirst(HttpHeaders.AUTHORIZATION)
+
         return this.cameraService
-            .buildCamera()
+            .buildCamera(authHeader!!)
+            .onErrorResume { error -> Mono.error(error) }
     }
 
     @DeleteMapping(
         path = ["/delete/{id}"],
     )
+    @PreAuthorize("hasRole('ADMIN')")
     fun delete(
         @PathVariable id: String
     ): Mono<Void> {
@@ -157,6 +180,7 @@ class CameraController(
     @DeleteMapping(
         path = ["/deleteAllCameras"]
     )
+    @PreAuthorize("hasRole('ADMIN')")
     fun deleteAllCameras(
     ): Mono<Void> {
         return this.cameraService

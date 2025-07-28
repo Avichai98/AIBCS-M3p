@@ -22,6 +22,7 @@ class JwtUtil(
             .setIssuedAt(now)
             .setExpiration(expiry)
             .claim("email", user.email)
+            .claim("roles", user.roles)
             .signWith(key, io.jsonwebtoken.SignatureAlgorithm.HS384)
             .compact()
     }
@@ -30,11 +31,16 @@ class JwtUtil(
         getClaims(token)
         true
     } catch (e: Exception) {
+        print("Invalid JWT token: ${e.message}")
         false
     }
 
     fun getUserIdFromToken(token: String): String =
         getClaims(token).subject
+
+    fun getRolesFromToken(token: String): List<String> {
+        return getClaims(token)["roles"] as List<String>? ?: emptyList()
+    }
 
     fun getClaims(token: String) =
         Jwts.parserBuilder()

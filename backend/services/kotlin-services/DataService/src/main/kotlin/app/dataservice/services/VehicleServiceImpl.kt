@@ -10,9 +10,9 @@ import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
-import java.text.SimpleDateFormat
 import java.time.Duration
 import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 @Service
 class VehicleServiceImpl(
@@ -127,10 +127,9 @@ class VehicleServiceImpl(
         if (page < 0 || size < 1)
             return Flux.empty()
 
-        val formatter = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss")
-        formatter.isLenient = false
+        val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss")
 
-        return Mono.fromCallable { formatter.parse(timestampStr) }
+        return Mono.fromCallable { LocalDateTime.parse(timestampStr, formatter) }
             .onErrorResume {
                 Mono.error(BadRequestException400("Invalid date format: Use YYYY-MM-DD'T'HH:mm:ss"))
             }

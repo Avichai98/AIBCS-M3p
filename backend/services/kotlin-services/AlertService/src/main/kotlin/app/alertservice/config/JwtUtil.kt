@@ -16,11 +16,16 @@ class JwtUtil(
         getClaims(token)
         true
     } catch (e: Exception) {
+        print("Invalid JWT token: ${e.message}")
         false
     }
 
     fun getUserIdFromToken(token: String): String =
         getClaims(token).subject
+
+    fun getRolesFromToken(token: String): List<String> {
+        return getClaims(token)["roles"] as List<String>? ?: emptyList()
+    }
 
     fun getClaims(token: String) =
         Jwts.parserBuilder()

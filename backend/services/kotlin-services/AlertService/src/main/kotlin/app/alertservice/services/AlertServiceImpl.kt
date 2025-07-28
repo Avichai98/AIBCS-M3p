@@ -29,9 +29,16 @@ class AlertServiceImpl(
         this.webClient = WebClient.create(dataServiceUrl)
     }
 
-    override fun createAlert(alert: AlertBoundary): Mono<AlertBoundary> {
-        return this.webClient.post().uri("/create").accept(MediaType.APPLICATION_JSON).bodyValue(alert).retrieve()
-            .bodyToMono(AlertBoundary::class.java).doOnError { e -> e.printStackTrace() }.log()
+    override fun createAlert(alert: AlertBoundary, authorizationHeader: String): Mono<AlertBoundary> {
+        return this.webClient
+            .post()
+            .uri("/create")
+            .header("Authorization", authorizationHeader)
+            .accept(MediaType.APPLICATION_JSON)
+            .bodyValue(alert)
+            .retrieve()
+            .bodyToMono(AlertBoundary::class.java)
+            .doOnError { e -> e.printStackTrace() }.log()
     }
 
     override fun sendAlert(alert: AlertBoundary): Mono<Void> {

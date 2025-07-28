@@ -4,6 +4,7 @@ import app.dataservice.boundaries.AlertBoundary
 import app.dataservice.interfaces.AlertService
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import org.springframework.http.MediaType
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -26,6 +27,7 @@ class AlertController(
         consumes = [MediaType.APPLICATION_JSON_VALUE],
         produces = [MediaType.APPLICATION_JSON_VALUE]
     )
+    @PreAuthorize("hasRole('ADMIN')")
     fun create(
         @RequestBody alert: AlertBoundary
     ): Mono<AlertBoundary>{
@@ -37,6 +39,7 @@ class AlertController(
         path = ["/getAlertById/{id}"],
         produces = [MediaType.APPLICATION_JSON_VALUE]
     )
+    @PreAuthorize("hasRole('ADMIN') or hasRole('USER')")
     fun getAlertById(
         @PathVariable id: String
     ): Mono<AlertBoundary>{
@@ -48,6 +51,7 @@ class AlertController(
         path = ["/getAlerts"],
         produces = [MediaType.TEXT_EVENT_STREAM_VALUE]
     )
+    @PreAuthorize("hasRole('ADMIN')")
     fun getAlerts(
         @RequestParam(name = "page", required = false, defaultValue = "0") page: Int,
         @RequestParam(name = "size", required = false, defaultValue = "20") size: Int
@@ -60,6 +64,7 @@ class AlertController(
         path = ["/getAlertsByVehicle/{id}"],
         produces = [MediaType.TEXT_EVENT_STREAM_VALUE]
     )
+    @PreAuthorize("hasRole('ADMIN') or hasRole('USER')")
     fun getAlertsByVehicle(
         @PathVariable id: String,
         @RequestParam(name = "page", required = false, defaultValue = "0") page: Int,
@@ -73,6 +78,7 @@ class AlertController(
         path = ["/getAlertsByTimestamp/{timestampStr}"],
         produces = [MediaType.TEXT_EVENT_STREAM_VALUE]
     )
+    @PreAuthorize("hasRole('ADMIN')")
     fun getAlertsByTimestamp(
         @PathVariable("timestampStr") timestampStr: String,
         @RequestParam(name = "page", required = false, defaultValue = "0") page: Int,
@@ -86,6 +92,7 @@ class AlertController(
         path = ["/getAlertsByCamera/{cameraId}"],
         produces = [MediaType.APPLICATION_JSON_VALUE, MediaType.TEXT_EVENT_STREAM_VALUE]
     )
+    @PreAuthorize("hasRole('ADMIN') or hasRole('USER')")
     fun getAlertsByCamera(
         @PathVariable cameraId: String,
         @RequestParam(name = "page", required = false, defaultValue = "0") page: Int,
@@ -98,6 +105,7 @@ class AlertController(
     @DeleteMapping(
         path = ["/delete/{id}"]
     )
+    @PreAuthorize("hasRole('ADMIN')")
     fun delete(
         @PathVariable id: String
     ): Mono<Void>{
@@ -108,6 +116,7 @@ class AlertController(
     @DeleteMapping(
         path = ["/deleteAllAlerts"]
     )
+    @PreAuthorize("hasRole('ADMIN')")
     fun deleteAllAlerts(): Mono<Void>{
         return this.alertService
         .deleteAll()

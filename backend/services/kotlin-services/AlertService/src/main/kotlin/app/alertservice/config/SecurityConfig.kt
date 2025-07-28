@@ -8,6 +8,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity
 import org.springframework.security.config.web.server.SecurityWebFiltersOrder
 import org.springframework.security.config.web.server.ServerHttpSecurity
+import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.web.server.SecurityWebFilterChain
 import org.springframework.security.web.server.authentication.AuthenticationWebFilter
 import reactor.core.publisher.Mono
@@ -44,7 +45,11 @@ class SecurityConfig(
             val token = auth.credentials.toString()
             if (jwtUtil.validateToken(token)) {
                 val userId = jwtUtil.getUserIdFromToken(token)
-                Mono.just(UsernamePasswordAuthenticationToken(userId, token, listOf()))
+                val roles = jwtUtil.getRolesFromToken(token)
+
+                // Assuming roles are in the format "ROLE_USER", "ROLE_ADMIN", etc.
+                val authorities = roles.map { role -> SimpleGrantedAuthority("ROLE_$role") }
+                Mono.just(UsernamePasswordAuthenticationToken(userId, token, authorities))
             } else {
                 Mono.empty()
             }
