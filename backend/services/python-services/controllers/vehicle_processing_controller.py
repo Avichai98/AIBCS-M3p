@@ -13,7 +13,9 @@ import httpx
 import uvicorn
 import base64
 import json
-from api_comandes import (
+
+sys.path.append(os.path.join(os.path.dirname(__file__), "Services"))
+from vehicle_processing_service import (
     compare_vehicles,
     build,
     process_image,
@@ -24,6 +26,8 @@ from api_comandes import (
 )
 
 import traceback
+
+sys.path.append(os.path.join(os.path.dirname(__file__), "utils"))
 from kafka_queue import update_vehicle
 
 
