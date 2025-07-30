@@ -26,7 +26,7 @@ from api_comandes import (
 
 import traceback
 from kafka_queue import update_vehicle
-from config.auth_middleware import JWTBearer
+from config.auth_middleware import JWTBearer, roles_required
 from config.securitySchemes import custom_openapi
 
 
@@ -43,7 +43,7 @@ app.add_middleware(
 )
 
 app.openapi = lambda: custom_openapi(app)
-@app.get("/build", dependencies=[Depends(JWTBearer())])
+@app.get("/build", dependencies=[Depends(roles_required(["ADMIN", "USER"]))])
 def build_models():
     global models
     answers = build()
@@ -54,37 +54,30 @@ def build_models():
     }
 
 
-@app.get("/start", dependencies=[Depends(JWTBearer())])
+@app.get("/start", dependencies=[Depends(roles_required(["ADMIN", "USER"]))])
 async def start_work():
     start()
 
 
-@app.get("/stop", dependencies=[Depends(JWTBearer())])
+@app.get("/stop", dependencies=[Depends(roles_required(["ADMIN", "USER"]))])
 async def stop_work():
     stop()
 
-
-@app.put("/update_vehicle", dependencies=[Depends(JWTBearer())])
-async def update_vehicle_route(vehicle: dict):
-    update_vehicle(vehicle)
-    return {"status": "Vehicle update sent"}
-
-
-@app.post("/demo", dependencies=[Depends(JWTBearer())])
-async def process_image_demo(file: UploadFile = File(...)):
+@app.post("/demo/{camera_id}", dependencies=[Depends(roles_required(["ADMIN", "USER"]))])
+async def process_image_demo(camera_id: str, file: UploadFile = File(...)):
     try:
         file_content = await file.read()
         image = Image.open(io.BytesIO(file_content)).convert("RGB")
         new_width, new_height = 1280, 720
         image = image.resize((new_width, new_height))
-        answer = process_image(image, models)
+        answer = process_image(image, models, camera_id)
         return answer
     except Exception as e:
         tb = traceback.format_exc()
         raise HTTPException(status_code=500, detail=f"{str(e)}\nLocation:\n{tb}")
 
 
-@app.post("/demo_work/{camera_id}", dependencies=[Depends(JWTBearer())])
+@app.post("/demo_work/{camera_id}", dependencies=[Depends(roles_required(["ADMIN", "USER"]))])
 async def demo_work_flow(camera_id: str, file1: UploadFile = File(None)):
     global models
     flag = 0
@@ -110,12 +103,12 @@ async def root():
     return RedirectResponse(url="/docs")
 
 
-@app.get("/delete_all_images", dependencies=[Depends(JWTBearer())])
+@app.get("/delete_all_images", dependencies=[Depends(roles_required("ADMIN"))])
 async def delete_all_images():
     return remove_images()
 
 
-@app.post("/compare_vehicles", dependencies=[Depends(JWTBearer())])
+@app.post("/compare_vehicles", dependencies=[Depends(roles_required(["ADMIN", "USER"]))])
 async def compare_vehicles_endpoint(
     file1: UploadFile = File(...), file2: UploadFile = File(...)
 ):
