@@ -6,14 +6,13 @@ import app.alertservice.interfaces.AlertService
 import jakarta.annotation.PostConstruct
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.MediaType
-import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import reactor.core.publisher.Mono
 
 @Service
 class AlertServiceImpl(
-    private val kafkaTemplate: KafkaTemplate<String, AlertBoundary>, private val emailService: EmailService
+    private val emailService: EmailService
 ) : AlertService {
     lateinit var dataServiceUrl: String
     lateinit var webClient: WebClient

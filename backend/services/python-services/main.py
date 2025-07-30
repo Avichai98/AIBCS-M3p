@@ -84,15 +84,15 @@ async def process_image_demo(file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail=f"{str(e)}\nLocation:\n{tb}")
 
 
-@app.post("/demo_work", dependencies=[Depends(JWTBearer())])
-async def demo_work_flow(file1: UploadFile = File(None)):
+@app.post("/demo_work/{camera_id}", dependencies=[Depends(JWTBearer())])
+async def demo_work_flow(camera_id: str, file1: UploadFile = File(None)):
     global models
     flag = 0
     try:
         file_content = await file1.read() if file1 is not None else None
         if file_content is None:
             flag = 1
-        output = demo_work(file_content, models, flag=flag)
+        output = demo_work(file_content, models, camera_id, flag=flag)
         return output
 
     except Exception as e:

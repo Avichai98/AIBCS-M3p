@@ -92,6 +92,20 @@ class VehicleServiceImpl(
             .log()
     }
 
+    override fun getVehiclesByCameraId(
+        cameraId: String,
+        page: Int,
+        size: Int
+    ): Flux<VehicleBoundary> {
+        if (page < 0 || size < 1)
+            return Flux.empty()
+
+        return this.vehicleCrud
+            .findAllByCameraId(cameraId, PageRequest.of(page, size, Sort.Direction.ASC, "timestamp"))
+            .map { VehicleBoundary(it) }
+            .log()
+    }
+
     override fun getVehiclesByManufacturer(
         manufacturer: String,
         page: Int,

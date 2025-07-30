@@ -97,7 +97,7 @@ def stop():
     return {"message": "Stopped"}
 
 
-def process_image(image, models):
+def process_image(image, models, camera_id):
     try:
         vehicle_model = models.get("vehicle")
         car_damage_model = models.get("car_damage")
@@ -118,7 +118,7 @@ def process_image(image, models):
                 )
             v = {
                 "id": 0,
-                "cameraId": "6884dd8be79f33241d1688ab",
+                "cameraId": camera_id,
                 "type": str(vehicle.get("object")),
                 "manufacturer": str(vehicle.get("make")),
                 "color": str(vehicle.get("color")),
@@ -249,7 +249,7 @@ def crop_image(image, model):
     return output_path
 
 
-def demo_work(image_upload, models, flag=0):
+def demo_work(image_upload, models, camera_id, flag=0):
     """
     This function is a demo workflow that simulates the process of capturing an image,
     detecting vehicles, blurring faces, and detecting car damages.
@@ -269,8 +269,8 @@ def demo_work(image_upload, models, flag=0):
         new_width, new_height = 1280, 720
         image = image.resize((new_width, new_height))
         image = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
-    full_list = process_image(image, models).get("vehicles", [])
-    output = compare_all_vehicles_from_db(full_list, models, image)
+    full_list = process_image(image, models, camera_id).get("vehicles", [])
+    output = compare_all_vehicles_from_db(full_list, models, image, camera_id)
 
     return output
 
@@ -492,17 +492,20 @@ def compare_vehicles(db_vehicle, image_vehicle, weights=None):
     return round(total_score * 100, 2)
 
 
-def compare_all_vehicles_from_db(detected_vehicles, models, image):
+def compare_all_vehicles_from_db(detected_vehicles, models, image, camera_id="6884dd8be79f33241d1688ab"):
     """
     Connect to MongoDB, fetch all stored vehicles, and compare with the detected ones.
 
+    :param models:
+    :param image:
+    :param camera_id:
     :param db_uri: MongoDB connection string
     :param db_name: Name of the database
     :param collection_name: Collection containing vehicle entries
     :param detected_vehicles: List of vehicle dicts from image
     :return: List of match results (dict with db_vehicle, detected_vehicle, score)
     """
-    url = "http://data-management-service:8080/vehicles/getVehicles"
+    url = f"http://data-management-service:8080/vehicles/getVehiclesByCameraId/{camera_id}"
     try:
         Image_blur_model = models.get("image_blur")
     except Exception as e:

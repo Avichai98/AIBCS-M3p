@@ -3,6 +3,7 @@ package app.dataservice.config
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.http.HttpMethod
+import org.springframework.http.HttpStatus
 import org.springframework.security.authentication.ReactiveAuthenticationManager
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.config.annotation.method.configuration.EnableReactiveMethodSecurity
@@ -11,6 +12,7 @@ import org.springframework.security.config.web.server.SecurityWebFiltersOrder
 import org.springframework.security.config.web.server.ServerHttpSecurity
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.web.server.SecurityWebFilterChain
+import org.springframework.security.web.server.ServerAuthenticationEntryPoint
 import org.springframework.security.web.server.authentication.AuthenticationWebFilter
 import reactor.core.publisher.Mono
 
@@ -37,8 +39,22 @@ class SecurityConfig(
                     "/webjars/**").permitAll()
                 it.anyExchange().authenticated()
             }
+            .exceptionHandling { it.authenticationEntryPoint(bearerServerAuthenticationEntryPoint()) }
             .addFilterAt(jwtAuthenticationFilter(), SecurityWebFiltersOrder.AUTHENTICATION)
             .build()
+    }
+
+    @Bean
+    fun bearerServerAuthenticationEntryPoint(): ServerAuthenticationEntryPoint {
+        return ServerAuthenticationEntryPoint { exchange, _ ->
+            exchange.response.headers.add("Access-Control-Allow-Origin", "*")
+            exchange.response.headers.add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+            exchange.response.headers.add("Access-Control-Allow-Headers", "*")
+            exchange.response.headers.add("Access-Control-Max-Age", "3600")
+            exchange.response.headers.add("WWW-Authenticate", "Bearer realm=\"Realm\"")
+            exchange.response.statusCode = HttpStatus.UNAUTHORIZED
+            Mono.empty()
+        }
     }
 
     @Bean
@@ -64,6 +80,7 @@ class SecurityConfig(
                 val token = authHeader.removePrefix("Bearer ")
                 Mono.just(UsernamePasswordAuthenticationToken(null, token))
             } else {
+                print("No Authorization header found or invalid format")
                 Mono.empty()
             }
         }

@@ -66,7 +66,7 @@ class VehicleController(
         path = ["/getVehicles"],
         produces = [MediaType.APPLICATION_JSON_VALUE, MediaType.TEXT_EVENT_STREAM_VALUE]
     )
-    @PreAuthorize("hasRole('ADMIN') or hasRole('USER')")
+    @PreAuthorize("hasRole('ADMIN')")
     fun getVehicles(
         @RequestParam(name = "page", required = false, defaultValue = "0") page: Int,
         @RequestParam(name = "size", required = false, defaultValue = "20") size: Int
@@ -75,6 +75,19 @@ class VehicleController(
             .getVehiclesPage(page, size)
     }
 
+    @GetMapping(
+        path = ["/getVehiclesByCameraId/{cameraId}"],
+        produces = [MediaType.APPLICATION_JSON_VALUE, MediaType.TEXT_EVENT_STREAM_VALUE]
+    )
+    @PreAuthorize("hasRole('ADMIN') or hasRole('USER')")
+    fun getVehiclesByCameraId(
+        @PathVariable cameraId: String,
+        @RequestParam(name = "page", required = false, defaultValue = "0") page: Int,
+        @RequestParam(name = "size", required = false, defaultValue = "20") size: Int
+    ): Flux<VehicleBoundary>{
+        return this.vehicleService
+            .getVehiclesByCameraId(cameraId, page, size)
+    }
 
     @GetMapping(
         path = ["/getVehiclesByManufacturer/{manufacturer}"],
