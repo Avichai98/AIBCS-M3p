@@ -14,8 +14,8 @@ import uvicorn
 import base64
 import json
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "Services"))
-from vehicle_processing_service import (
+# sys.path.append(os.path.join(os.path.dirname(__file__), "Services"))
+from Services.vehicle_processing_service import (
     compare_vehicles,
     build,
     process_image,
@@ -26,9 +26,6 @@ from vehicle_processing_service import (
 )
 
 import traceback
-
-sys.path.append(os.path.join(os.path.dirname(__file__), "utils"))
-from kafka_queue import update_vehicle
 
 
 start_flag = 0
@@ -55,12 +52,6 @@ async def start_work():
 @app.get("/stop")
 async def stop_work():
     stop()
-
-
-@app.put("/update_vehicle")
-async def update_vehicle_route(vehicle: dict):
-    update_vehicle(vehicle)
-    return {"status": "Vehicle update sent"}
 
 
 @app.post("/demo")
