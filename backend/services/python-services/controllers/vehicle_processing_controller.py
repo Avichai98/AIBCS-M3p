@@ -14,7 +14,9 @@ import httpx
 import uvicorn
 import base64
 import json
-from api_comandes import (
+
+# sys.path.append(os.path.join(os.path.dirname(__file__), "Services"))
+from Services.vehicle_processing_service import (
     compare_vehicles,
     build,
     process_image,
@@ -25,7 +27,6 @@ from api_comandes import (
 )
 
 import traceback
-from kafka_queue import update_vehicle
 from config.auth_middleware import JWTBearer, roles_required
 from config.securitySchemes import custom_openapi
 
@@ -65,6 +66,9 @@ async def stop_work():
 
 @app.post("/demo/{camera_id}", dependencies=[Depends(roles_required(["ADMIN", "USER"]))])
 async def process_image_demo(camera_id: str, file: UploadFile = File(...)):
+
+@app.post("/demo")
+async def process_image_demo(file: UploadFile = File(...)):
     try:
         file_content = await file.read()
         image = Image.open(io.BytesIO(file_content)).convert("RGB")

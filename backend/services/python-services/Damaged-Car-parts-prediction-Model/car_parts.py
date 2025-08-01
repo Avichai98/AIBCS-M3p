@@ -141,17 +141,17 @@ def set_detection():
     return detection
 
 
-app = FastAPI()
+# app = FastAPI()
 
 
-@app.post("/detection")
-def post_detection(file: bytes = File(...)):
-    image = Image.open(io.BytesIO(file)).convert("RGB")
-    image = np.array(image)
-    image = image[:, :, ::-1].copy()
-    results = detection(image)
-    return results
+# @app.post("/detection")
+# def post_detection(file: bytes = File(...)):
+#     image = Image.open(io.BytesIO(file)).convert("RGB")
+#     image = np.array(image)
+#     image = image[:, :, ::-1].copy()
+#     results = detection(image)
+#     return results
 
 
-if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=8080)
+# if __name__ == "__main__":
+#     uvicorn.run("main:app", host="0.0.0.0", port=8080)
