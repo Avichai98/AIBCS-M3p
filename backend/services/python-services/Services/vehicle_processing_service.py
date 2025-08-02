@@ -96,7 +96,7 @@ def stop():
     start_flag = 0
     return {"message": "Stopped"}
 
-
+  
 def process_image(image, models, camera_id):
     try:
         vehicle_model = models.get("vehicle")
@@ -153,7 +153,7 @@ def crop_image(image, model):
     cv2.imwrite(output_path, blur_image)
     return output_path
 
-
+  
 def demo_work(image_upload, models, camera_id, flag=0):
     """
     This function is a demo workflow that simulates the process of capturing an image,
@@ -410,7 +410,9 @@ def compare_all_vehicles_from_db(detected_vehicles, models, image, camera_id="68
     :param detected_vehicles: List of vehicle dicts from image
     :return: List of match results (dict with db_vehicle, detected_vehicle, score)
     """
+
     url = f"http://data-management-service:8080/vehicles/getVehiclesByCameraId/{camera_id}"
+
     try:
         Image_blur_model = models.get("image_blur")
     except Exception as e:
@@ -422,6 +424,7 @@ def compare_all_vehicles_from_db(detected_vehicles, models, image, camera_id="68
         token = get_auth_token()
         headers = {"Authorization": f"Bearer {token}"}
         response = httpx.get(url, headers=headers)
+
         if response.status_code == 404:
             print("No vehicles found in the database.")
             vehicles = []

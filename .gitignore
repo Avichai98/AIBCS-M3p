@@ -6,3 +6,4 @@
 .idea/vcs.xml
 .idea
 application-secret.properties
+backend\.env

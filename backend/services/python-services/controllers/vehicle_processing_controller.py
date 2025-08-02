@@ -44,6 +44,7 @@ app.add_middleware(
 )
 
 app.openapi = lambda: custom_openapi(app)
+
 @app.get("/build", dependencies=[Depends(roles_required(["ADMIN", "USER"]))])
 def build_models():
     global models
@@ -64,6 +65,7 @@ async def start_work():
 async def stop_work():
     stop()
 
+    
 @app.post("/demo/{camera_id}", dependencies=[Depends(roles_required(["ADMIN", "USER"]))])
 async def process_image_demo(camera_id: str, file: UploadFile = File(...)):
     try:
@@ -72,6 +74,7 @@ async def process_image_demo(camera_id: str, file: UploadFile = File(...)):
         new_width, new_height = 1280, 720
         image = image.resize((new_width, new_height))
         answer = process_image(image, models, camera_id)
+
         return answer
     except Exception as e:
         tb = traceback.format_exc()
@@ -87,6 +90,7 @@ async def demo_work_flow(camera_id: str, file1: UploadFile = File(None)):
         if file_content is None:
             flag = 1
         output = demo_work(file_content, models, camera_id, flag=flag)
+
         return output
 
     except Exception as e:
