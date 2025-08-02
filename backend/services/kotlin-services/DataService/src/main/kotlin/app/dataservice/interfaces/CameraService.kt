@@ -7,8 +7,8 @@ import reactor.core.publisher.Mono
 
 interface CameraService {
     fun createCamera(camera: CameraBoundary): Mono<CameraBoundary>
-    fun startCamera(): Mono<Void>
-    fun stopCamera(): Mono<Void>
+    fun startCamera(authorizationHeader: String): Mono<Void>
+    fun stopCamera(authorizationHeader: String): Mono<Void>
     fun updateCamera(id: String, camera: CameraBoundary): Mono<Void>
     fun updateCameraSchedule(id: String, schedule: CameraSchedule): Mono<Void>
     fun updateCameraStatus(id: String, status: Boolean): Mono<Void>
@@ -17,7 +17,7 @@ interface CameraService {
     fun getCameraById(id: String): Mono<CameraBoundary>
     fun getCamerasPage(page: Int, size: Int): Flux<CameraBoundary>
     fun getCamerasByEmail(email: String, page: Int, size: Int): Flux<CameraBoundary>
-    fun buildCamera() : Mono<Void>
+    fun buildCamera(authorizationHeader: String) : Mono<Void>
     fun deleteCamera(id: String): Mono<Void>
     fun deleteAll(): Mono<Void>
 }

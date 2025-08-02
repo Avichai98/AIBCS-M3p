@@ -6,14 +6,13 @@ import app.alertservice.interfaces.AlertService
 import jakarta.annotation.PostConstruct
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.MediaType
-import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import reactor.core.publisher.Mono
 
 @Service
 class AlertServiceImpl(
-    private val kafkaTemplate: KafkaTemplate<String, AlertBoundary>, private val emailService: EmailService
+    private val emailService: EmailService
 ) : AlertService {
     lateinit var dataServiceUrl: String
     lateinit var webClient: WebClient
@@ -29,9 +28,16 @@ class AlertServiceImpl(
         this.webClient = WebClient.create(dataServiceUrl)
     }
 
-    override fun createAlert(alert: AlertBoundary): Mono<AlertBoundary> {
-        return this.webClient.post().uri("/create").accept(MediaType.APPLICATION_JSON).bodyValue(alert).retrieve()
-            .bodyToMono(AlertBoundary::class.java).doOnError { e -> e.printStackTrace() }.log()
+    override fun createAlert(alert: AlertBoundary, authorizationHeader: String): Mono<AlertBoundary> {
+        return this.webClient
+            .post()
+            .uri("/create")
+            .header("Authorization", authorizationHeader)
+            .accept(MediaType.APPLICATION_JSON)
+            .bodyValue(alert)
+            .retrieve()
+            .bodyToMono(AlertBoundary::class.java)
+            .doOnError { e -> e.printStackTrace() }.log()
     }
 
     override fun sendAlert(alert: AlertBoundary): Mono<Void> {

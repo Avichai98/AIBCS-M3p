@@ -2,6 +2,7 @@
 FROM gradle:8.13-jdk21 AS build
 WORKDIR /app
 COPY . .
+
 RUN gradle build --no-daemon
 
 # Second stage: use a slim JDK image to run the app

@@ -9,6 +9,7 @@ interface VehicleService {
     fun updateVehicle(id: String, updatedVehicle: VehicleBoundary): Mono<VehicleBoundary>
     fun getVehicleById(id: String): Mono<VehicleBoundary>
     fun getVehiclesPage(page: Int, size: Int): Flux<VehicleBoundary>
+    fun getVehiclesByCameraId(cameraId: String, page: Int, size: Int): Flux<VehicleBoundary>
     fun getVehiclesByManufacturer(manufacturer: String, page: Int, size: Int): Flux<VehicleBoundary>
     fun getVehiclesByLatitudeAndLongitude(latitude: Double, longitude: Double, page: Int, size: Int): Flux<VehicleBoundary>
     fun getVehiclesByTimestampAfter(timestampStr: String, page: Int, size: Int): Flux<VehicleBoundary>

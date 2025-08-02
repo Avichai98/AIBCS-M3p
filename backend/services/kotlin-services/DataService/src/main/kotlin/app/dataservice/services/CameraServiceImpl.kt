@@ -6,6 +6,7 @@ import app.dataservice.exceptions.BadRequestException400
 import app.dataservice.exceptions.NotFoundException404
 import app.dataservice.interfaces.CameraCrud
 import app.dataservice.interfaces.CameraService
+import jakarta.annotation.PostConstruct
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
@@ -20,13 +21,20 @@ class CameraServiceImpl(
     val cameraCrud: CameraCrud
 ) :
     CameraService {
-    lateinit var dataServiceUrl: String
+    lateinit var detectServiceUrl: String
     lateinit var webClient: WebClient
 
     @Value("\${remote.python.service.url: http://car-detection-service:5000}")
     fun setRemoteUrl(url: String) {
-        this.dataServiceUrl = url
+        this.detectServiceUrl = url
     }
+
+    @PostConstruct
+    fun init() {
+        System.err.println("***** $detectServiceUrl")
+        this.webClient = WebClient.create(detectServiceUrl)
+    }
+
     override fun createCamera(camera: CameraBoundary): Mono<CameraBoundary> {
         val emails = camera.emails
         if (!emails.isNullOrEmpty()) {
@@ -67,24 +75,26 @@ class CameraServiceImpl(
             .log()
     }
 
-    override fun startCamera(): Mono<Void> {
+    override fun startCamera(authorizationHeader: String): Mono<Void> {
         return webClient
-            .post()
+            .get()
             .uri("start")
+            .header("Authorization", authorizationHeader)
             .accept(MediaType.APPLICATION_JSON)
             .retrieve()
             .bodyToMono(Void::class.java)
-            .doOnSuccess { println("📸 Camera start response: $it") }
+            .doOnSuccess { println("Camera start response: $it") }
             .onErrorResume { e ->
                 Mono.error(BadRequestException400("Camera start failed: ${e.message}"))
             }
             .log()
     }
 
-    override fun stopCamera(): Mono<Void> {
+    override fun stopCamera(authorizationHeader: String): Mono<Void> {
         return webClient
-            .post()
+            .get()
             .uri("stop")
+            .header("Authorization", authorizationHeader)
             .accept(MediaType.APPLICATION_JSON)
             .retrieve()
             .bodyToMono(Void::class.java)
@@ -216,10 +226,11 @@ class CameraServiceImpl(
             .log()
     }
 
-    override fun buildCamera(): Mono<Void> {
+    override fun buildCamera(authorizationHeader: String): Mono<Void> {
         return this.webClient
             .get()
             .uri("/build")
+            .header("Authorization", authorizationHeader)
             .retrieve()
             .bodyToMono(String::class.java)
             .doOnSuccess { println("🚀 Camera build response: $it") }

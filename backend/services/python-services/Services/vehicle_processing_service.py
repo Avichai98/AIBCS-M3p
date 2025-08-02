@@ -13,25 +13,26 @@ import httpx
 import json
 import pytz
 from azure.storage.blob import BlobServiceClient
+from utils.auth_utils import get_auth_token
 
 sys.path.append(
     os.path.join(
-        os.path.dirname(__file__), "vehicle-recognition-api-yolov4-python-master"
+        os.path.dirname(__file__), "..", "vehicle-recognition-api-yolov4-python-master"
     )
 )
 from vehicle_detection import VehicleRecognitionModel, get_items
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "face-bluring"))
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "face-bluring"))
 from blur import ImageBlur, load_model
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "image-capture"))
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "image-capture"))
 from image import camera_use
 
 sys.path.append(
-    os.path.join(os.path.dirname(__file__), "Damaged-Car-parts-prediction-Model")
+    os.path.join(os.path.dirname(__file__), "..", "Damaged-Car-parts-prediction-Model")
 )
 from car_parts import set_detection
-from kafka_queue import create_vehicle, update_vehicle
+from utils.kafka_queue import create_vehicle, update_vehicle
 
 
 def build():
@@ -95,8 +96,8 @@ def stop():
     start_flag = 0
     return {"message": "Stopped"}
 
-
-def process_image(image, models):
+  
+def process_image(image, models, camera_id):
     try:
         vehicle_model = models.get("vehicle")
         car_damage_model = models.get("car_damage")
@@ -117,7 +118,7 @@ def process_image(image, models):
                 )
             v = {
                 "id": 0,
-                "cameraId": "6859134254232e6caafefef7",
+                "cameraId": camera_id,
                 "type": str(vehicle.get("object")),
                 "manufacturer": str(vehicle.get("make")),
                 "color": str(vehicle.get("color")),
@@ -144,7 +145,7 @@ def process_image(image, models):
 
 def crop_image(image, model):
     base_path = os.path.dirname(os.path.abspath(__file__))
-    folderPath = os.path.join(base_path, "image_output")
+    folderPath = os.path.join(base_path, "..", "image_output")
     now = datetime.now().astimezone(pytz.timezone("Asia/Jerusalem"))
     name = now.strftime("%Y-%m-%d_%H-%M-%S") + f"-{now.microsecond // 1000:03d}"
     output_path = os.path.join(folderPath, f"{name}.png")
@@ -152,8 +153,8 @@ def crop_image(image, model):
     cv2.imwrite(output_path, blur_image)
     return output_path
 
-
-def demo_work(image_upload, models, flag=0):
+  
+def demo_work(image_upload, models, camera_id, flag=0):
     """
     This function is a demo workflow that simulates the process of capturing an image,
     detecting vehicles, blurring faces, and detecting car damages.
@@ -173,8 +174,8 @@ def demo_work(image_upload, models, flag=0):
         new_width, new_height = 1280, 720
         image = image.resize((new_width, new_height))
         image = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
-    full_list = process_image(image, models).get("vehicles", [])
-    output = compare_all_vehicles_from_db(full_list, models, image)
+    full_list = process_image(image, models, camera_id).get("vehicles", [])
+    output = compare_all_vehicles_from_db(full_list, models, image, camera_id)
 
     return output
 
@@ -396,17 +397,22 @@ def compare_vehicles(db_vehicle, image_vehicle, weights=None):
     return round(total_score * 100, 2)
 
 
-def compare_all_vehicles_from_db(detected_vehicles, models, image):
+def compare_all_vehicles_from_db(detected_vehicles, models, image, camera_id="6884dd8be79f33241d1688ab"):
     """
     Connect to MongoDB, fetch all stored vehicles, and compare with the detected ones.
 
+    :param models:
+    :param image:
+    :param camera_id:
     :param db_uri: MongoDB connection string
     :param db_name: Name of the database
     :param collection_name: Collection containing vehicle entries
     :param detected_vehicles: List of vehicle dicts from image
     :return: List of match results (dict with db_vehicle, detected_vehicle, score)
     """
-    url = "http://data-management-service:8080/vehicles/getVehicles"
+
+    url = f"http://data-management-service:8080/vehicles/getVehiclesByCameraId/{camera_id}"
+
     try:
         Image_blur_model = models.get("image_blur")
     except Exception as e:
@@ -415,7 +421,10 @@ def compare_all_vehicles_from_db(detected_vehicles, models, image):
         )
 
     try:
-        response = httpx.get(url)
+        token = get_auth_token()
+        headers = {"Authorization": f"Bearer {token}"}
+        response = httpx.get(url, headers=headers)
+
         if response.status_code == 404:
             print("No vehicles found in the database.")
             vehicles = []
