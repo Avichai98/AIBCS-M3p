@@ -11,10 +11,11 @@ class UserBoundary(
     var password: String?,
     var mobile: String?,
     var username: String?,
+    var roles: Set<String>,
     var createdAt: LocalDateTime?,
     var updatedAt: LocalDateTime?
 ) {
-    constructor() : this(null, null, null, null, null, null, null, null, null)
+    constructor() : this(null, null, null, null, null, null, null, emptySet(), null, null)
 
     constructor(userEntity: UserEntity): this(){
         this.id = userEntity.id
@@ -24,6 +25,7 @@ class UserBoundary(
         this.password = userEntity.password
         this.mobile = userEntity.mobile
         this.username = userEntity.username
+        this.roles = userEntity.roles
         this.createdAt = userEntity.createdAt
         this.updatedAt = userEntity.updatedAt
     }
@@ -38,6 +40,7 @@ class UserBoundary(
         userEntity.password = password
         userEntity.mobile = mobile
         userEntity.username = username
+        userEntity.roles = roles
         userEntity.createdAt = createdAt
         userEntity.updatedAt = updatedAt
 
@@ -53,6 +56,7 @@ class UserBoundary(
                 " password=$password," +
                 " mobile=$mobile," +
                 " username=$username," +
+                " roles=$roles," +
                 " createdAt=$createdAt," +
                 " updatedAt=$updatedAt)"
     }

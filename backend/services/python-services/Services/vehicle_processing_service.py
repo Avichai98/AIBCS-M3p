@@ -13,25 +13,26 @@ import httpx
 import json
 import pytz
 from azure.storage.blob import BlobServiceClient
+from utils.auth_utils import get_auth_token
 
 sys.path.append(
     os.path.join(
-        os.path.dirname(__file__), "vehicle-recognition-api-yolov4-python-master"
+        os.path.dirname(__file__), "..", "vehicle-recognition-api-yolov4-python-master"
     )
 )
 from vehicle_detection import VehicleRecognitionModel, get_items
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "face-bluring"))
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "face-bluring"))
 from blur import ImageBlur, load_model
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "image-capture"))
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "image-capture"))
 from image import camera_use
 
 sys.path.append(
-    os.path.join(os.path.dirname(__file__), "Damaged-Car-parts-prediction-Model")
+    os.path.join(os.path.dirname(__file__), "..", "Damaged-Car-parts-prediction-Model")
 )
 from car_parts import set_detection
-from kafka_queue import create_vehicle, update_vehicle
+from utils.kafka_queue import create_vehicle, update_vehicle
 
 
 def build():
@@ -95,8 +96,8 @@ def stop():
     start_flag = 0
     return {"message": "Stopped"}
 
-
-def process_image(image, models):
+  
+def process_image(image, models, camera_id):
     try:
         vehicle_model = models.get("vehicle")
         car_damage_model = models.get("car_damage")
@@ -117,7 +118,7 @@ def process_image(image, models):
                 )
             v = {
                 "id": 0,
-                "cameraId": "6859134254232e6caafefef7",
+                "cameraId": camera_id,
                 "type": str(vehicle.get("object")),
                 "manufacturer": str(vehicle.get("make")),
                 "color": str(vehicle.get("color")),
@@ -142,104 +143,9 @@ def process_image(image, models):
         raise HTTPException(status_code=500, detail=f"Error processing image: {str(e)}")
 
 
-# TODO remove crop image function from here
-def process_image2(image, models):
-    try:
-        # Automatically detect local timezone
-        now = datetime.now().astimezone(pytz.timezone("Asia/Jerusalem"))
-        name = now.strftime("%Y-%m-%d_%H-%M-%S")
-        base_path = os.path.dirname(os.path.abspath(__file__))
-        folderPath = os.path.join(base_path, "image_output")
-        if not os.path.exists(folderPath):
-            os.makedirs(folderPath)
-        location_name = os.path.join(folderPath, f"{name}.png")
-        vehicle_model = models.get("vehicle")
-        Image_blur_model = models.get("image_blur")
-        car_damage_model = models.get("car_damage")
-        if not vehicle_model or not Image_blur_model or not car_damage_model:
-            raise HTTPException(status_code=500, detail="Models are not initialized.")
-        # Save the PIL image at location_name using cv2
-        cv2.imwrite(location_name, cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR))
-        vehicle_results = vehicle_model.objectDetect(location_name).get("vehicles")
-        img = cv2.imread(location_name)
-        full_list = []
-        # Blur the image using the Image_blur_model
-        # blurred_image = Image_blur_model.image_blur(location_name)
-        # new_image = cv2.imread(blurred_image)
-        for vehicle in vehicle_results:
-            rect = vehicle.get("rect")
-            car_img = img[
-                int(rect["top"]) : int(rect["top"]) + int(rect["height"]),
-                int(rect["left"]) : int(rect["left"]) + int(rect["width"]),
-            ]
-            car_damage_results = car_damage_model(car_img)
-            if not car_damage_results:
-                raise HTTPException(
-                    status_code=500, detail="Car damage detection failed."
-                )
-            blurred_cropped_image = Image_blur_model.image_blur(car_img)
-            v = {
-                "id": 0,
-                "cameraId": "685b091fb0c11f1324fc5b9c",
-                "type": str(vehicle.get("object")),
-                "manufacturer": str(vehicle.get("make")),
-                "color": str(vehicle.get("color")),
-                "typeProb": float(vehicle.get("object_prob", 0)),
-                "manufacturerProb": float(vehicle.get("make_prob", 0)),
-                "colorProb": float(vehicle.get("color_prob", 0)),
-                "imageUrl": "none",  # str(encode_image_to_base64(car_img)),
-                "description": str(car_damage_results),
-                "stayDuration": 0,
-                "top": int(rect["top"]),
-                "left": int(rect["left"]),
-                "width": int(rect["width"]),
-                "height": int(rect["height"]),
-                "latitude": round(float(rect["top"]) + (float(rect["height"]) / 2), 3),
-                "longitude": round(float(rect["left"]) + (float(rect["width"]) / 2), 3),
-            }
-            full_list.append(v)
-            # remove this part is for image debugging
-            # # Draw rectangles and labels on the new image
-            # rect = vehicle.get("rect")
-            # object = vehicle.get("object", 0)
-            # object_prob = vehicle.get("object_prob", 0)
-            # color = vehicle.get("color", 0)
-            # color_prob = vehicle.get("color_prob", 0)
-            # make = vehicle.get("make", 0)
-            # make_prob = vehicle.get("make_prob", 0)
-            # label = f"{object} {float(object_prob):.2f} {make} {float(make_prob):.2f} {color} {float(color_prob):.2f}"
-            # x, y, w, h = (
-            #     int(rect["left"]),
-            #     int(rect["top"]),
-            #     int(rect["width"]),
-            #     int(rect["height"]),
-            # )
-            # cv2.rectangle(new_image, (x, y), (x + w, y + h), (0, 255, 0), 2)
-            # cv2.putText(
-            #     new_image,
-            #     label,
-            #     (x, y - 10),
-            #     cv2.FONT_HERSHEY_SIMPLEX,
-            #     0.6,
-            #     (0, 255, 0),
-            #     2,
-            # )
-        remove_image(location_name)  # Remove the original image after processing
-        # output_image_path = os.path.join(
-        #     base_path, "image_output", f"{name}_detected.png"
-        # )
-        # cv2.imwrite(output_image_path, new_image)
-        return {
-            "vehicles": full_list,
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error processing image: {str(e)}")
-
-
-# TODO change the crop image function for single vehicle
 def crop_image(image, model):
     base_path = os.path.dirname(os.path.abspath(__file__))
-    folderPath = os.path.join(base_path, "image_output")
+    folderPath = os.path.join(base_path, "..", "image_output")
     now = datetime.now().astimezone(pytz.timezone("Asia/Jerusalem"))
     name = now.strftime("%Y-%m-%d_%H-%M-%S") + f"-{now.microsecond // 1000:03d}"
     output_path = os.path.join(folderPath, f"{name}.png")
@@ -247,8 +153,8 @@ def crop_image(image, model):
     cv2.imwrite(output_path, blur_image)
     return output_path
 
-
-def demo_work(image_upload, models, flag=0):
+  
+def demo_work(image_upload, models, camera_id, flag=0):
     """
     This function is a demo workflow that simulates the process of capturing an image,
     detecting vehicles, blurring faces, and detecting car damages.
@@ -268,8 +174,8 @@ def demo_work(image_upload, models, flag=0):
         new_width, new_height = 1280, 720
         image = image.resize((new_width, new_height))
         image = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
-    full_list = process_image(image, models).get("vehicles", [])
-    output = compare_all_vehicles_from_db(full_list, models, image)
+    full_list = process_image(image, models, camera_id).get("vehicles", [])
+    output = compare_all_vehicles_from_db(full_list, models, image, camera_id)
 
     return output
 
@@ -491,17 +397,22 @@ def compare_vehicles(db_vehicle, image_vehicle, weights=None):
     return round(total_score * 100, 2)
 
 
-def compare_all_vehicles_from_db(detected_vehicles, models, image):
+def compare_all_vehicles_from_db(detected_vehicles, models, image, camera_id="6884dd8be79f33241d1688ab"):
     """
     Connect to MongoDB, fetch all stored vehicles, and compare with the detected ones.
 
+    :param models:
+    :param image:
+    :param camera_id:
     :param db_uri: MongoDB connection string
     :param db_name: Name of the database
     :param collection_name: Collection containing vehicle entries
     :param detected_vehicles: List of vehicle dicts from image
     :return: List of match results (dict with db_vehicle, detected_vehicle, score)
     """
-    url = "http://data-management-service:8080/vehicles/getVehicles"
+
+    url = f"http://data-management-service:8080/vehicles/getVehiclesByCameraId/{camera_id}"
+
     try:
         Image_blur_model = models.get("image_blur")
     except Exception as e:
@@ -510,7 +421,10 @@ def compare_all_vehicles_from_db(detected_vehicles, models, image):
         )
 
     try:
-        response = httpx.get(url)
+        token = get_auth_token()
+        headers = {"Authorization": f"Bearer {token}"}
+        response = httpx.get(url, headers=headers)
+
         if response.status_code == 404:
             print("No vehicles found in the database.")
             vehicles = []
@@ -554,8 +468,10 @@ def compare_all_vehicles_from_db(detected_vehicles, models, image):
                     detected["left"] : detected["left"] + detected["width"],
                 ]
                 output_path = crop_image(car_img, Image_blur_model)
-                # blurred_cropped_image = Image_blur_model.image_blur(car_img)
+                filename = os.path.basename(output_path)
+                image_url = upload_to_azure(output_path, filename)
                 detected["imageUrl"] = output_path
+                remove_an_image(output_path)
                 create_vehicle(detected)
     else:
         output = {"DB empty": detected_vehicles}
@@ -568,7 +484,7 @@ def compare_all_vehicles_from_db(detected_vehicles, models, image):
             filename = os.path.basename(output_path)
             image_url = upload_to_azure(output_path, filename)
             detected["imageUrl"] = image_url
-            # blurred_cropped_image = Image_blur_model.image_blur(car_img)
+            remove_an_image(output_path)
             create_vehicle(detected)
     return output
 
@@ -586,21 +502,22 @@ def remove_images():
         return {"status": "image_output folder does not exist"}
 
 
-def remove_image(image_name):
-    base_path = os.path.dirname(os.path.abspath(__file__))
-    folderPath = os.path.join(base_path, "image_output")
-    file_path = os.path.join(folderPath, image_name)
-    if os.path.exists(file_path):
-        os.remove(file_path)
-        return {"status": f"{image_name} deleted from image_output"}
+def remove_an_image(image_path):
+    if os.path.exists(image_path):
+        os.remove(image_path)
+        return {"status": f"{image_path} deleted from image_output"}
     else:
-        return {"status": f"{image_name} does not exist in image_output"}
+        return {"status": f"{image_path} does not exist in image_output"}
+
 
 def get_blob_service():
     connect_str = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
     return BlobServiceClient.from_connection_string(connect_str)
 
-def upload_to_azure(image_path: str, blob_name: str, container_name: str = "images") -> str:
+
+def upload_to_azure(
+    image_path: str, blob_name: str, container_name: str = "images"
+) -> str:
     blob_service = get_blob_service()
     container_client = blob_service.get_container_client(container_name)
 
@@ -614,4 +531,3 @@ def upload_to_azure(image_path: str, blob_name: str, container_name: str = "imag
 
     # return the URL of the uploaded blob
     return f"https://{blob_service.account_name}.blob.core.windows.net/{container_name}/{blob_name}"
-

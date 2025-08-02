@@ -13,10 +13,11 @@ class UserEntity (
     var password: String?,
     var mobile: String?,
     var username: String?,
+    var roles: Set<String>,
     var createdAt: LocalDateTime?,
     var updatedAt: LocalDateTime?
 ){
-    constructor() : this(null, null, null, null, null, null, null, null, null)
+    constructor() : this(null, null, null, null, null, null, null, emptySet(), null, null)
 
     override fun toString(): String {
         return "UserEntity(" +
@@ -27,6 +28,7 @@ class UserEntity (
                 " password=$password," +
                 " mobile=$mobile," +
                 " username=$username," +
+                " roles=$roles," +
                 " createdAt=$createdAt," +
                 " updatedAt=$updatedAt)"
     }
