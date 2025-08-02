@@ -1,4 +1,4 @@
 
-.env
+backend/.env
 build
 .gradle
