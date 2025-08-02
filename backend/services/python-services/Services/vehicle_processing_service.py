@@ -17,22 +17,22 @@ from utils.auth_utils import get_auth_token
 
 sys.path.append(
     os.path.join(
-        os.path.dirname(__file__), "vehicle-recognition-api-yolov4-python-master"
+        os.path.dirname(__file__), "..", "vehicle-recognition-api-yolov4-python-master"
     )
 )
 from vehicle_detection import VehicleRecognitionModel, get_items
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "face-bluring"))
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "face-bluring"))
 from blur import ImageBlur, load_model
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "image-capture"))
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "image-capture"))
 from image import camera_use
 
 sys.path.append(
-    os.path.join(os.path.dirname(__file__), "Damaged-Car-parts-prediction-Model")
+    os.path.join(os.path.dirname(__file__), "..", "Damaged-Car-parts-prediction-Model")
 )
 from car_parts import set_detection
-from kafka_queue import create_vehicle, update_vehicle
+from utils.kafka_queue import create_vehicle, update_vehicle
 
 
 def build():
@@ -145,7 +145,7 @@ def process_image(image, models, camera_id):
 
 def crop_image(image, model):
     base_path = os.path.dirname(os.path.abspath(__file__))
-    folderPath = os.path.join(base_path, "image_output")
+    folderPath = os.path.join(base_path, "..", "image_output")
     now = datetime.now().astimezone(pytz.timezone("Asia/Jerusalem"))
     name = now.strftime("%Y-%m-%d_%H-%M-%S") + f"-{now.microsecond // 1000:03d}"
     output_path = os.path.join(folderPath, f"{name}.png")

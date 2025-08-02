@@ -15,8 +15,8 @@ import uvicorn
 import base64
 import json
 
-# sys.path.append(os.path.join(os.path.dirname(__file__), "Services"))
-from Services.vehicle_processing_service import (
+# sys.path.append(os.path.join(os.path.dirname(__file__), "services"))
+from services.vehicle_processing_service import (
     compare_vehicles,
     build,
     process_image,
@@ -66,9 +66,6 @@ async def stop_work():
 
 @app.post("/demo/{camera_id}", dependencies=[Depends(roles_required(["ADMIN", "USER"]))])
 async def process_image_demo(camera_id: str, file: UploadFile = File(...)):
-
-@app.post("/demo")
-async def process_image_demo(file: UploadFile = File(...)):
     try:
         file_content = await file.read()
         image = Image.open(io.BytesIO(file_content)).convert("RGB")
@@ -140,4 +137,4 @@ async def compare_vehicles_endpoint(
 
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=5000, reload=True)
+    uvicorn.run("vehicle_processing_controller:app", host="0.0.0.0", port=5000, reload=True)

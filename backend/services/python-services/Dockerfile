@@ -18,4 +18,4 @@ COPY . .
 EXPOSE 5000
 
 # Start the FastAPI application using Uvicorn
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "5000"]
+CMD ["uvicorn", "controllers.vehicle_processing_controller:app", "--host", "0.0.0.0", "--port", "5000"]
