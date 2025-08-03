@@ -26,7 +26,7 @@ class VehicleBoundary(
     constructor() : this(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)
 
     override fun toString(): String {
-        return "VehicleEntity(" +
+        return "VehicleBoundary(" +
                 "id=$id," +
                 " cameraId=$cameraId," +
                 " type=$type," +
