@@ -12,6 +12,9 @@ services:
       - data-management-service
       - kafka
     restart: on-failure
+    devices:
+      - "/dev/video0:/dev/video0"
+    privileged: true
 
   data-management-service:
     build:

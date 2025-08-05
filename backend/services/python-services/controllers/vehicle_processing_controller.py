@@ -56,14 +56,21 @@ def build_models():
     }
 
 
-@app.get("/start", dependencies=[Depends(roles_required(["ADMIN", "USER"]))])
-async def start_work():
-    start()
+@app.get("/start/{camera_id}", dependencies=[Depends(roles_required(["ADMIN", "USER"]))])
+async def start_work(camera_id: str):
+    global models
+    models = build().get("models",{})
+    try:
+        return await start(models,camera_id)
+    except Exception as e:
+        tb = traceback.format_exc()
+        print(f"{str(e)}\n Location:\n{tb}")
+        return await stop()
 
 
 @app.get("/stop", dependencies=[Depends(roles_required(["ADMIN", "USER"]))])
 async def stop_work():
-    stop()
+    return await stop()
 
     
 @app.post("/demo/{camera_id}", dependencies=[Depends(roles_required(["ADMIN", "USER"]))])
