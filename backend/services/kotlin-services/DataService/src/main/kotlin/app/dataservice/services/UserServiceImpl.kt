@@ -10,6 +10,7 @@ import app.dataservice.interfaces.UserCrud
 import app.dataservice.interfaces.UserService
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
+import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
@@ -18,7 +19,8 @@ import java.time.LocalDateTime
 @Service
 class UserServiceImpl(
     val userCrud: UserCrud,
-    val jwtUtil: JwtUtil
+    val jwtUtil: JwtUtil,
+    val passwordEncoder: PasswordEncoder
 ) :
     UserService {
     override fun createUser(user: UserBoundary): Mono<UserBoundary> {
@@ -39,6 +41,7 @@ class UserServiceImpl(
                             Mono.defer {
                                 user.id = null
                                 user.createdAt = LocalDateTime.now()
+                                user.password = passwordEncoder.encode(user.password)
                                 userCrud.save(user.toEntity())
                                     .map { UserBoundary(it) }
                             }
@@ -63,6 +66,12 @@ class UserServiceImpl(
                     it.lastName = user.lastName
                 if (!user.username.isNullOrBlank())
                     it.username = user.username
+                if (!user.mobile.isNullOrBlank())
+                    it.mobile = user.mobile
+                if (!user.password.isNullOrBlank())
+                    it.password = passwordEncoder.encode(user.password)
+                if (user.roles.isNotEmpty())
+                    it.roles = user.roles
 
                 it.updatedAt = LocalDateTime.now()
                 this.userCrud.save(it)
@@ -118,7 +127,7 @@ class UserServiceImpl(
             .findByEmail(login.email)
             .switchIfEmpty(Mono.error(BadRequestException400("Invalid email or password")))
             .flatMap { user ->
-                if (user.password != login.password) {
+                if (!passwordEncoder.matches(login.password, user.password)) {
                     System.err.println("***** UserServiceImpl.login: User found with email inside if")
                     Mono.error(BadRequestException400("Invalid email or password"))
                 } else {
