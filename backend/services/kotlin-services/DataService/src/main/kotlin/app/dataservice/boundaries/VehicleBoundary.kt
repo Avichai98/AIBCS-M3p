@@ -75,7 +75,7 @@ class VehicleBoundary(
     }
 
     override fun toString(): String {
-        return "VehicleEntity(" +
+        return "VehicleBoundary(" +
                 "id=$id," +
                 " cameraId=$cameraId," +
                 " type=$type," +

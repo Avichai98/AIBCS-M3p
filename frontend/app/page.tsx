@@ -18,13 +18,6 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
 
-  // Mock users for demonstration
-  const mockUsers = [
-    { email: "admin@smartcam.com", password: "admin123" },
-    { email: "operator@smartcam.com", password: "operator123" },
-    { email: "manager@smartcam.com", password: "manager123" },
-  ]
-
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
@@ -89,14 +82,6 @@ export default function LoginPage() {
               {isLoading ? "Signing in..." : "Sign In"}
             </Button>
           </form>
-          <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-            <p className="text-sm text-gray-600 mb-2">Demo Credentials:</p>
-            <div className="text-xs space-y-1">
-              <div>admin@smartcam.com / admin123</div>
-              <div>operator@smartcam.com / operator123</div>
-              <div>manager@smartcam.com / manager123</div>
-            </div>
-          </div>
         </CardContent>
       </Card>
     </div>

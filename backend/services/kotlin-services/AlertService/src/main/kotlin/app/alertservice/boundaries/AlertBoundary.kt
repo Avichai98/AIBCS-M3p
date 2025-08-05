@@ -14,7 +14,7 @@ class AlertBoundary(
     constructor(): this(null, null, null, null, null, null, null)
 
     override fun toString(): String {
-        return "AlertEntity(" +
+        return "AlertBoundary(" +
                 "id=$id," +
                 " cameraId=$cameraId," +
                 " type=$type," +

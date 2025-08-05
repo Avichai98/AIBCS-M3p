@@ -4,5 +4,10 @@
         "./services/python-services/vehicle-recognition-api-yolov4-python-master",
         "./services/python-services/image-capture",
         "./services/python-services/Damaged-Car-parts-prediction-Model"
-    ]
+    ],
+    "python.testing.pytestArgs": [
+        "."
+    ],
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true
 }

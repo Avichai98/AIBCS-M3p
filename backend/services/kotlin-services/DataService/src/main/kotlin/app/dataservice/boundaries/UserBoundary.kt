@@ -48,7 +48,7 @@ class UserBoundary(
     }
 
     override fun toString(): String {
-        return "UserEntity(" +
+        return "UserBoundary(" +
                 "id=$id," +
                 " firstName=$firstName," +
                 " lastName=$lastName," +

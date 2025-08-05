@@ -39,7 +39,7 @@ class AlertBoundary(
     }
 
     override fun toString(): String {
-        return "AlertEntity(" +
+        return "AlertBoundary(" +
                 "id=$id," +
                 " cameraId=$cameraId," +
                 " type=$type," +
