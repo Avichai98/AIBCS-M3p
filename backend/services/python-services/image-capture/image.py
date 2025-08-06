@@ -19,6 +19,10 @@ class camera_use:
             )
         result, image = cam.read()
         cam.release()
+        if image is None:
+            raise HTTPException(
+                status_code=500, detail="Problem taking image"
+            )
         if result:
             name = (
                 datetime.now()
