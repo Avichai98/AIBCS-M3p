@@ -49,12 +49,14 @@ def build_models():
     }
 
 
-@app.get("/start/{camera_id}", dependencies=[Depends(roles_required(["ADMIN", "USER"]))])
+@app.get(
+    "/start/{camera_id}", dependencies=[Depends(roles_required(["ADMIN", "USER"]))]
+)
 async def start_work(camera_id: str):
     global models
-    models = build().get("models",{})
+    models = build().get("models", {})
     try:
-        return await start(models,camera_id)
+        return await start(models, camera_id)
     except Exception as e:
         tb = traceback.format_exc()
         print(f"{str(e)}\n Location:\n{tb}")
@@ -102,9 +104,6 @@ async def demo_work_flow(camera_id: str, file1: UploadFile = File(None)):
         raise HTTPException(status_code=500, detail=f"{str(e)}\nLocation:\n{tb}")
 
 
-def encode_image_to_base64(image):
-    _, buffer = cv2.imencode(".png", image)
-    return base64.b64encode(buffer).decode("utf-8")
 
 
 @app.get("/")
