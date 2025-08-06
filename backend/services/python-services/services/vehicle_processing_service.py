@@ -100,10 +100,14 @@ async def start(models,camera_id):
 
 
 async def stop():
-    stop_event.set()
-    return {"message": "Stopped"}
+    global loop_task
+    if not loop_task or loop_task.done():
+        return {"message": "Not running"}
+    stop_event.set()                 
+    await loop_task     
+    return {"message": "Stopped"}           
 
-  
+
 def process_image(image, models, camera_id):
     try:
         vehicle_model = models.get("vehicle")
@@ -205,6 +209,8 @@ def demo_work(image_upload, models, camera_id, flag=0):
 #         full_list = process_image(new_image, models,camera_id).get("vehicles", [])
 #         compare_all_vehicles_from_db(full_list,models,new_image)
 #     print("stopped")
+
+#TODO need to see how to make the work stop fully so it also write stopped at the end and then the stop function will stop
 async def work(models, camera_id):
     camera = models.get("camera")
     if not camera:
