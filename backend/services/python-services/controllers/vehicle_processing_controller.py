@@ -8,7 +8,6 @@ import uvicorn
 import base64
 import json
 
-# sys.path.append(os.path.join(os.path.dirname(__file__), "services"))
 from services.vehicle_processing_service import (
     compare_vehicles,
     build,

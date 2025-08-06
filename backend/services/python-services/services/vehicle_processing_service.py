@@ -3,8 +3,6 @@ from fastapi import HTTPException
 import os
 import cv2
 import numpy as np
-import threading
-import time
 from datetime import datetime
 from PIL import Image
 import io
@@ -82,29 +80,28 @@ def build():
             status_code=500, detail=f"Error initializing models: {str(e)}"
         )
 
+
 stop_event = asyncio.Event()
 loop_task = None
 
-async def start(models,camera_id):
+
+async def start(models, camera_id):
     global loop_task
     if loop_task and not loop_task.done():
         return {"message": "Already running"}
 
     stop_event.clear()
-    loop_task = asyncio.create_task(work(models,camera_id))
+    loop_task = asyncio.create_task(work(models, camera_id))
     return {"message": "Started"}
-
-
-    
 
 
 async def stop():
     global loop_task
     if not loop_task or loop_task.done():
         return {"message": "Not running"}
-    stop_event.set()                 
-    await loop_task     
-    return {"message": "Stopped"}           
+    stop_event.set()
+    await loop_task
+    return {"message": "Stopped"}
 
 
 def process_image(image, models, camera_id):
@@ -190,33 +187,15 @@ def demo_work(image_upload, models, camera_id, flag=0):
     return output
 
 
-# def work(models,camera_id):
-#     # get all the models and check if they are not null
-#     camera = models.get("camera")
-#     if not camera:
-#         raise HTTPException(status_code=500, detail="camera is not initialized.")
-#     # Capture an image from the camera
-#     while not stop_event.is_set():
-#         camera_name = camera.capture_image()
-#         if not camera_name:
-#             raise HTTPException(status_code=500, detail="Camera is not working.")
-#         image = camera_name["image"]
-#         if image is None:
-#             raise HTTPException(status_code=500, detail="didnt get image")
-#         new_width, new_height = 1280, 720
-#         new_image = cv2.resize(image, (new_width, new_height))
-#         full_list = process_image(new_image, models,camera_id).get("vehicles", [])
-#         compare_all_vehicles_from_db(full_list,models,new_image)
-#     print("stopped")
-
-#TODO need to see how to make the work stop fully so it also write stopped at the end and then the stop function will stop
 async def work(models, camera_id):
     camera = models.get("camera")
     if not camera:
         raise HTTPException(status_code=500, detail="camera is not initialized.")
 
     while not stop_event.is_set():
-        camera_name = await asyncio.get_running_loop().run_in_executor(None, camera.capture_image)
+        camera_name = await asyncio.get_running_loop().run_in_executor(
+            None, camera.capture_image
+        )
 
         if not camera_name:
             raise HTTPException(status_code=500, detail="Camera is not working.")
@@ -225,14 +204,20 @@ async def work(models, camera_id):
         if image is None:
             raise HTTPException(status_code=500, detail="didn't get image")
 
-        new_image = await asyncio.get_running_loop().run_in_executor(None, cv2.resize, image, (1280, 720))
+        new_image = await asyncio.get_running_loop().run_in_executor(
+            None, cv2.resize, image, (1280, 720)
+        )
 
         full_list = await asyncio.get_running_loop().run_in_executor(
             None, process_image, new_image, models, camera_id
         )
 
         await asyncio.get_running_loop().run_in_executor(
-            None, compare_all_vehicles_from_db, full_list.get("vehicles", []), models, new_image
+            None,
+            compare_all_vehicles_from_db,
+            full_list.get("vehicles", []),
+            models,
+            new_image,
         )
 
         await asyncio.sleep(1)
