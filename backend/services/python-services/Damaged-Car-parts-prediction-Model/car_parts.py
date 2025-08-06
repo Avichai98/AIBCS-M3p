@@ -1,19 +1,8 @@
-import io
-import uvicorn
 import numpy as np
-
-# import nest_asyncio
-from enum import Enum
-from fastapi import FastAPI, UploadFile, File, HTTPException
-from fastapi.responses import StreamingResponse
 import cv2
 from typing import List
 from numpy import ndarray
 from typing import Tuple
-from PIL import Image
-
-# import base64
-from fastapi import Response
 import os
 
 
@@ -139,19 +128,3 @@ def set_detection():
         ],
     )
     return detection
-
-
-# app = FastAPI()
-
-
-# @app.post("/detection")
-# def post_detection(file: bytes = File(...)):
-#     image = Image.open(io.BytesIO(file)).convert("RGB")
-#     image = np.array(image)
-#     image = image[:, :, ::-1].copy()
-#     results = detection(image)
-#     return results
-
-
-# if __name__ == "__main__":
-#     uvicorn.run("main:app", host="0.0.0.0", port=8080)

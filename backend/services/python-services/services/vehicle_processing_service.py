@@ -1,11 +1,8 @@
 import sys
-from fastapi import FastAPI, HTTPException, UploadFile, File
-from fastapi.responses import RedirectResponse
+from fastapi import HTTPException
 import os
 import cv2
 import numpy as np
-import threading
-import time
 from datetime import datetime
 from PIL import Image
 import io
@@ -32,6 +29,7 @@ sys.path.append(
 )
 from car_parts import set_detection
 from utils.kafka_queue import create_vehicle, update_vehicle
+import asyncio
 
 
 def build():
@@ -82,20 +80,29 @@ def build():
         )
 
 
-def start(auth_header):
-    global start_flag
-    start_flag = 1
-    thread = threading.Thread(target=work, args=auth_header)
-    thread.start()
+stop_event = asyncio.Event()
+loop_task = None
+
+
+async def start(auth_header, models, camera_id):
+    global loop_task
+    if loop_task and not loop_task.done():
+        return {"message": "Already running"}
+
+    stop_event.clear()
+    loop_task = asyncio.create_task(work(auth_header, models, camera_id))
     return {"message": "Started"}
 
 
-def stop():
-    global start_flag
-    start_flag = 0
+async def stop():
+    global loop_task
+    if not loop_task or loop_task.done():
+        return {"message": "Not running"}
+    stop_event.set()
+    await loop_task
     return {"message": "Stopped"}
 
-  
+
 def process_image(image, models, camera_id):
     try:
         vehicle_model = models.get("vehicle")
@@ -152,8 +159,8 @@ def crop_image(image, model):
     cv2.imwrite(output_path, blur_image)
     return output_path
 
-  
-def demo_work(image_upload, models, camera_id, auth_header, flag=0):
+
+def demo_work(auth_header, image_upload, models, camera_id, flag=0):
     """
     This function is a demo workflow that simulates the process of capturing an image,
     detecting vehicles, blurring faces, and detecting car damages.
@@ -174,28 +181,48 @@ def demo_work(image_upload, models, camera_id, auth_header, flag=0):
         image = image.resize((new_width, new_height))
         image = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
     full_list = process_image(image, models, camera_id).get("vehicles", [])
-    output = compare_all_vehicles_from_db(full_list, models, image, auth_header, camera_id)
+    output = compare_all_vehicles_from_db(auth_header, full_list, models, image, camera_id)
 
     return output
 
 
-def work(models, camera_id, auth_header):
-    # get all the models and check if they are not null
-    global start_flag
+async def work(auth_header, models, camera_id):
     camera = models.get("camera")
     if not camera:
         raise HTTPException(status_code=500, detail="camera is not initialized.")
-    # Capture an image from the camera
-    while start_flag == 1:
-        camera_name = camera.capture_image()
+
+    while not stop_event.is_set():
+        camera_name = await asyncio.get_running_loop().run_in_executor(
+            None, camera.capture_image
+        )
+
         if not camera_name:
             raise HTTPException(status_code=500, detail="Camera is not working.")
+
         image = camera_name["image"]
-        new_width, new_height = 1280, 720
-        image = image.resize((new_width, new_height))
-        full_list = process_image(image, models, camera_id).get("vehicles", [])
-        compare_all_vehicles_from_db(full_list, models, image, auth_header)
-        time.sleep(1)
+        if image is None:
+            raise HTTPException(status_code=500, detail="didn't get image")
+
+        new_image = await asyncio.get_running_loop().run_in_executor(
+            None, cv2.resize, image, (1280, 720)
+        )
+
+        full_list = await asyncio.get_running_loop().run_in_executor(
+            None, process_image, new_image, models, camera_id
+        )
+
+        await asyncio.get_running_loop().run_in_executor(
+            None,
+            compare_all_vehicles_from_db,
+            auth_header,
+            full_list.get("vehicles", []),
+            models,
+            new_image,
+        )
+
+        await asyncio.sleep(1)
+
+    print("Stopped")
 
 
 def compare_vehicles_from_files(db_vehicle_data, image_vehicle_data):
@@ -217,7 +244,6 @@ def compare_vehicles_from_files(db_vehicle_data, image_vehicle_data):
                     results.append(
                         {"db_vehicle": db_v, "image_vehicle": img_v, "score": score}
                     )
-        # Optionally, you could return all results or process them further
         return {"results": results}
     except Exception as e:
         raise HTTPException(
@@ -236,9 +262,7 @@ def compare_vehicles(db_vehicle, image_vehicle, weights=None):
     :return: float similarity score
     """
 
-    def match_score(
-        val1, val2, prob1, prob2, min_score=0.0
-    ):  # increase min_score to 0.1 for stricter matching
+    def match_score(val1, val2, prob1, prob2, min_score=0.0):
         if val1.lower() != val2.lower():
             return 0.0
         return max((prob1 + prob2) / 2.0, min_score)
@@ -278,7 +302,6 @@ def compare_vehicles(db_vehicle, image_vehicle, weights=None):
             return total_classes / max_details
         if max_details == 0 and total_classes == 0:
             return 1.0
-        # return 0.0
 
     def compute_dynamic_weights(db_vehicle, image_vehicle, base_total_weight=0.8):
         """
@@ -291,7 +314,6 @@ def compare_vehicles(db_vehicle, image_vehicle, weights=None):
         def avg_confidence(prob1, prob2):
             return (prob1 + prob2) / 2
 
-        # Get confidences
         type_conf = avg_confidence(
             db_vehicle.get("typeProb", 0.0), image_vehicle.get("typeProb", 0.0)
         )
@@ -307,7 +329,6 @@ def compare_vehicles(db_vehicle, image_vehicle, weights=None):
         bbox_weight_raw = min(max(bbox_weight, 0.0), 1.0)
 
         if total_conf == 0:
-            # fallback to equal weights
             return {
                 "type": base_total_weight / 4,
                 "manufacturer": base_total_weight / 4,
@@ -321,26 +342,21 @@ def compare_vehicles(db_vehicle, image_vehicle, weights=None):
             "bbox": bbox_weight_raw,
         }
 
-        # Normalize all weights so they sum to 1.0
         total_raw = sum(raw_weights.values())
         weights = {k: v / total_raw for k, v in raw_weights.items()}
         print(f"Raw weights: {raw_weights}, Normalized weights: {weights}")
-        # Normalize based on their proportional confidence
         return weights
 
     def compute_damage_weight(db_vehicle, image_vehicle, base_weight=0.05):
-        # If both empty → it's still useful → return base weight
         db_has_damage = bool(db_vehicle.get("details", {}).get("classes"))
         img_has_damage = bool(image_vehicle.get("details", {}).get("classes"))
 
         if not db_has_damage and not img_has_damage:
             return base_weight
 
-        # If only one has damage → suspicious → reduce trust
         if db_has_damage != img_has_damage:
-            return base_weight * 0.2  # maybe very small weight
+            return base_weight * 0.2
 
-        # If both have damage → use average confidence
         def avg_conf(details):
             confs = details.get("confidences", [])
             return sum(confs) / len(confs) if confs else 0.0
@@ -353,7 +369,6 @@ def compare_vehicles(db_vehicle, image_vehicle, weights=None):
     weights = compute_dynamic_weights(db_vehicle, image_vehicle, base_total_weight=0.95)
     weights["damage"] = compute_damage_weight(db_vehicle, image_vehicle)
 
-    # Compute scores
     type_score = match_score(
         db_vehicle["type"],
         image_vehicle["type"],
@@ -380,7 +395,6 @@ def compare_vehicles(db_vehicle, image_vehicle, weights=None):
     if bbox_score > 0.5:
         bbox_score = max(bbox_score, 0.95)
 
-    # Damage match (exact)
     damage_score = damage_match(
         db_vehicle.get("details", {}), image_vehicle.get("details", {})
     )
@@ -396,7 +410,9 @@ def compare_vehicles(db_vehicle, image_vehicle, weights=None):
     return round(total_score * 100, 2)
 
 
-def compare_all_vehicles_from_db(detected_vehicles, models, image, auth_header, camera_id="6884dd8be79f33241d1688ab"):
+def compare_all_vehicles_from_db(
+        auth_header, detected_vehicles, models, image, camera_id="6884dd8be79f33241d1688ab"
+):
     """
     Connect to MongoDB, fetch all stored vehicles, and compare with the detected ones.
 
@@ -443,9 +459,7 @@ def compare_all_vehicles_from_db(detected_vehicles, models, image, auth_header, 
         for detected in detected_vehicles:
             match_found = False
             for stored in vehicles:
-                score = compare_vehicles(
-                    stored, detected
-                )  # uses the function defined earlier
+                score = compare_vehicles(stored, detected)
                 print(f"Comparing {stored} with {detected}, score: {score}")
                 if score > 70:
                     # Update the stored vehicle with the detected one
@@ -458,7 +472,7 @@ def compare_all_vehicles_from_db(detected_vehicles, models, image, auth_header, 
                     )
                     update_vehicle(stored)
                     match_found = True
-                    vehicles.remove(stored)  # Remove matched vehicle from list
+                    vehicles.remove(stored)
                     break
 
             if not match_found:
@@ -523,7 +537,7 @@ def upload_to_azure(
     try:
         container_client.create_container()
     except Exception:
-        pass  # Container already exists
+        pass
 
     with open(image_path, "rb") as data:
         container_client.upload_blob(name=blob_name, data=data, overwrite=True)
