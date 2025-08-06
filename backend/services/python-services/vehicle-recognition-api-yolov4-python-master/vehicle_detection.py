@@ -1,15 +1,8 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException
-from fastapi.responses import JSONResponse
-import uvicorn
 import cv2
-import numpy as np
 import os
 from tempfile import NamedTemporaryFile
 import classifier
 from cv2 import dnn_DetectionModel
-from typing import List
-
-app = FastAPI()
 
 
 def get_items():
@@ -109,24 +102,3 @@ class VehicleRecognitionModel:
                     }
                 )
         return {"vehicles": objects}
-
-
-# Load model once
-paths = get_items()
-vehicle_model = VehicleRecognitionModel(*paths)
-
-
-@app.post("/detect-vehicles")
-async def detect_vehicles(file: UploadFile = File(...)):
-    try:
-        suffix = file.filename.split(".")[-1]
-        with NamedTemporaryFile(delete=False, suffix=f".{suffix}") as tmp:
-            tmp.write(await file.read())
-            tmp_path = tmp.name
-
-        results = vehicle_model.objectDetect(tmp_path)
-        os.remove(tmp_path)
-        return JSONResponse(content=results)
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))

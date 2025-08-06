@@ -1,11 +1,8 @@
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-from cv2 import VideoCapture, imwrite
+from fastapi import HTTPException
+from cv2 import VideoCapture
 from datetime import datetime
 import os
 import pytz
-
-app = FastAPI()
 
 
 class camera_use:
@@ -22,6 +19,10 @@ class camera_use:
             )
         result, image = cam.read()
         cam.release()
+        if image is None:
+            raise HTTPException(
+                status_code=500, detail="Problem taking image"
+            )
         if result:
             name = (
                 datetime.now()
@@ -30,7 +31,6 @@ class camera_use:
             )
             base_path = os.path.dirname(os.path.abspath(__file__))
             location_name = os.path.join(base_path, "image_output", f"{name}.png")
-            # imwrite(location_name, image)
             return {
                 "image": image,
                 "name": location_name,

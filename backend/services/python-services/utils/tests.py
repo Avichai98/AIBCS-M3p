@@ -1,10 +1,9 @@
 import sys
 import os
 import cv2
-from PIL import Image  # Optional: only if you want to load the image
-import glob
 import ast
 import re
+import matplotlib.pyplot as plt
 
 sys.path.append(
     os.path.join(
@@ -18,12 +17,7 @@ sys.path.append(
 )
 from car_parts import set_detection
 
-sys.path.append(
-    os.path.join(os.path.dirname(__file__), "Damaged-Car-parts-prediction-Model")
-)
-from car_parts import set_detection
 import random
-from typing import List
 
 
 def test_vehicle_recognition(
@@ -34,7 +28,7 @@ def test_vehicle_recognition(
     model_prediction = []
     color_prediction = []
     print("starting vehicle recognition test")
-    for subdir, dirs, files in os.walk(location):
+    for subdir, _, files in os.walk(location):
         for file in files:
             ext = os.path.splitext(file)[1].lower()
             if ext in image_extensions:
@@ -71,12 +65,6 @@ def test_vehicle_recognition(
                     model_prediction.append(f"on {image_name} Error: {str(e)}")
                     color_prediction.append(f"on {image_name} Error: {str(e)}")
     return model_prediction, color_prediction
-
-
-sys.path.append(
-    os.path.join(os.path.dirname(__file__), "Damaged-Car-parts-prediction-Model")
-)
-from car_parts import set_detection
 
 
 def test_damage_detection(
@@ -134,7 +122,6 @@ def test_face_detection(file_path):
                     match = re.search(r"got only (\d+)/(\d+)", value)
                     if match:
                         x, y = map(int, match.groups())
-                        # detections.append((x, y))
                         total += y
                         found += x
             except Exception as e:
@@ -144,16 +131,10 @@ def test_face_detection(file_path):
     return total, found
 
 
-import re
-import matplotlib.pyplot as plt
-
-
 def analyze_model_predictions(file_path):
-    # Read file
     with open(file_path, "r", encoding="utf-8") as f:
         lines = f.readlines()
 
-    # Initialize counters and accumulators
     correct = 0
     incorrect = 0
     probabilities = []
@@ -163,7 +144,6 @@ def analyze_model_predictions(file_path):
     # Regex to match lines like "Manufacturer is correct: [...] with 0.98"
     pattern = re.compile(r"(correct|incorrect).*?with ([0-9.]+)")
 
-    # Parse each line
     for line in lines:
         match = pattern.search(line)
         if match:
@@ -177,29 +157,24 @@ def analyze_model_predictions(file_path):
                 incorrect += 1
                 incorrect_probs.append(prob)
 
-    # Compute averages
     avg_prob = sum(probabilities) / len(probabilities) if probabilities else 0
     avg_correct_prob = sum(correct_probs) / len(correct_probs) if correct_probs else 0
     avg_incorrect_prob = (
         sum(incorrect_probs) / len(incorrect_probs) if incorrect_probs else 0
     )
 
-    # Print results
     print("Correct Predictions:", correct)
     print("Incorrect Predictions:", incorrect)
     print("Average Probability:", avg_prob)
     print("Average Correct Probability:", avg_correct_prob)
     print("Average Incorrect Probability:", avg_incorrect_prob)
 
-    # Plotting
-    fig, axs = plt.subplots(2, 1, figsize=(8, 10))
+    _, axs = plt.subplots(2, 1, figsize=(8, 10))
 
-    # Bar chart for prediction counts
     axs[0].bar(["Correct", "Incorrect"], [correct, incorrect], color=["green", "red"])
     axs[0].set_title("Correct vs Incorrect Predictions")
     axs[0].set_ylabel("Count")
 
-    # Bar chart for average probabilities
     axs[1].bar(
         ["Average", "Correct Avg", "Incorrect Avg"],
         [avg_prob, avg_correct_prob, avg_incorrect_prob],
