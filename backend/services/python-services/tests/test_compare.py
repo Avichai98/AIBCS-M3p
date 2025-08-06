@@ -1,9 +1,12 @@
 import pytest
 import httpx
 import time
+from utils.auth_utils import get_auth_token
+
 
 API_BUILD_URL = "http://localhost:5000/build"
-API_URL = "http://localhost:5000/demo_work"
+camera_id = "689274de15c47f1da6e812e3"
+API_URL = f"http://localhost:5000/demo_work/{camera_id}"
 API_DELETE_URL = "http://localhost:8080/vehicles/deleteAllVehicles"
 API_GET_URL = "http://localhost:8080/vehicles/getVehicles"
 
@@ -40,7 +43,7 @@ async def test_vehicle_db_count_flow():
 
         time.sleep(3)
 
-        # Step 4: Send second image
+        # Step 4: Send a second image
         with open("services/python-services/tests/test2.jpg", "rb") as f:
             response = await client.post(API_URL, headers=headers, files={"file1": ("test2.jpg", f, "image/jpeg")}, timeout=60.0)
             assert response.status_code == 200
