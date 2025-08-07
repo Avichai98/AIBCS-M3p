@@ -25,6 +25,9 @@ class KafkaVehicleListener(
     @KafkaListener(topics = ["vehicle-update"], groupId = "data-service")
     fun updateVehicle(vehicle: VehicleBoundary){
         println("Received VehicleUpdate: $vehicle")
+        if (vehicle.stayDuration!! > 600)
+            vehicle.alert = true
+            
         this.vehicleService.updateVehicle(vehicle.id!!, vehicle)
             .doOnNext { updatedVehicle ->
                 kafkaVehicleSender.sendUpdatedVehicleState(updatedVehicle)

@@ -104,9 +104,6 @@ async def demo_work_flow(request: Request, camera_id: str, file1: UploadFile = F
         raise HTTPException(status_code=500, detail=f"{str(e)}\nLocation:\n{tb}")
 
 
-def encode_image_to_base64(image):
-    _, buffer = cv2.imencode(".png", image)
-    return base64.b64encode(buffer).decode("utf-8")
 
 
 @app.get("/")

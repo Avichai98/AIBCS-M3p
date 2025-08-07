@@ -25,9 +25,10 @@ class VehicleEntity (
     var width: Int?,
     var height: Int?,
     var latitude: Float?,
-    var longitude: Float?
+    var longitude: Float?,
+    var alert: Boolean?
 ) {
-    constructor(): this(null ,null, null, null,null, null, null,null, null, null, null, null, null, null, null, null, null, null, null, null)
+    constructor(): this(null, null ,null, null, null,null, null, null,null, null, null, null, null, null, null, null, null, null, null, null, null)
 
     override fun toString(): String {
         return "VehicleEntity(" +
@@ -50,6 +51,7 @@ class VehicleEntity (
                 " width=$width," +
                 " height=$height," +
                 " latitude=$latitude," +
-                " longitude=$longitude)"
+                " longitude=$longitude,"+
+                " alert=$alert )"
     }
 }
