@@ -30,7 +30,7 @@ class VehicleServiceImpl(
                     vehicle.id = null
                     vehicle.timestamp = LocalDateTime.now()
                     vehicle.stayDuration = 0
-
+                    vehicle.alert = false
                     Mono.just(vehicle)
                 }
             }
@@ -59,6 +59,9 @@ class VehicleServiceImpl(
 
                 if (updatedVehicle.cameraId != null)
                     it.cameraId = updatedVehicle.cameraId
+
+                if (updatedVehicle.alert != null)
+                    it.alert = updatedVehicle.alert
 
                 val now = LocalDateTime.now()
                 val duration = Duration.between(it.timestamp, now)

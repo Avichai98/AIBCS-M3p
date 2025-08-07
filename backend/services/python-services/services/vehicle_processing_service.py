@@ -131,7 +131,7 @@ def process_image(image, models, camera_id):
                 "typeProb": float(vehicle.get("object_prob", 0)),
                 "manufacturerProb": float(vehicle.get("make_prob", 0)),
                 "colorProb": float(vehicle.get("color_prob", 0)),
-                "imageUrl": "none",  # str(encode_image_to_base64(car_img)),
+                "imageUrl": "none",
                 "description": str(car_damage_results),
                 "stayDuration": 0,
                 "top": int(rect["top"]),
@@ -181,6 +181,7 @@ def demo_work(auth_header, image_upload, models, camera_id, flag=0):
         image = image.resize((new_width, new_height))
         image = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
     full_list = process_image(image, models, camera_id).get("vehicles", [])
+
     output = compare_all_vehicles_from_db(auth_header, full_list, models, image, camera_id)
 
     return output
@@ -410,9 +411,7 @@ def compare_vehicles(db_vehicle, image_vehicle, weights=None):
     return round(total_score * 100, 2)
 
 
-def compare_all_vehicles_from_db(
-        auth_header, detected_vehicles, models, image, camera_id="6884dd8be79f33241d1688ab"
-):
+def compare_all_vehicles_from_db(auth_header, detected_vehicles, models, image, camera_id="6884dd8be79f33241d1688ab"):
     """
     Connect to MongoDB, fetch all stored vehicles, and compare with the detected ones.
 
