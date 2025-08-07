@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
-import { Camera, AlertTriangle, Clock, Settings, LogOut, Play, Pause } from "lucide-react"
+import { Camera, AlertTriangle, Clock, Settings, LogOut, Play, Pause } from 'lucide-react'
 import Link from "next/link"
 import { apiService } from "@/lib/api"
 
@@ -38,13 +38,32 @@ export default function Dashboard() {
         }
         setUser(JSON.parse(userData))
 
-        // Load cameras and stats from backend
-        const [camerasData, /*statsData*/] = await Promise.all([apiService.getCameras(JSON.parse(userData).email), /*apiService.getDashboardStats()*/])
-        
+        // Load cameras from backend
+        const camerasData = await apiService.getCameras(JSON.parse(userData).email)
         console.log("📷 Fetched cameras data:", camerasData)
 
-        setCameras(camerasData)
-        // You can use statsData for the overview cards if needed
+        // Fetch actual alerts for each camera to get accurate counts
+        const camerasWithAccurateAlerts = await Promise.all(
+          camerasData.map(async (camera) => {
+            try {
+              const alerts = await apiService.getAlerts(camera.id)
+              // Remove duplicates based on alert ID
+              const uniqueAlerts = alerts.filter((alert, index, self) => 
+                index === self.findIndex(a => a.id === alert.id)
+              )
+              return {
+                ...camera,
+                alertCount: uniqueAlerts.length
+              }
+            } catch (error) {
+              console.error(`Failed to fetch alerts for camera ${camera.id}:`, error)
+              // Keep original alertCount if API call fails
+              return camera
+            }
+          })
+        )
+
+        setCameras(camerasWithAccurateAlerts)
       } catch (error) {
         console.error("Failed to load dashboard data:", error)
         // Handle error - maybe show a toast notification
@@ -69,7 +88,7 @@ export default function Dashboard() {
     // Optimistically update the camera state
     setCameras((prev) =>
       prev.map((cam) =>
-        cam.id === cameraId ? { ...cam, isActive: !cam.isActive } : cam
+        cam.id === cameraId ? { ...cam, isActive: !camera.isActive } : cam
       )
     )
   } catch (error) {
