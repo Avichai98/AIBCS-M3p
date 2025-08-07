@@ -22,9 +22,10 @@ class VehicleBoundary(
     var width: Int?,
     var height: Int?,
     var latitude: Float?,
-    var longitude: Float?
+    var longitude: Float?,
+    var alert: Boolean?
 ) {
-    constructor(): this(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)
+    constructor(): this(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)
 
     constructor(vehicleEntity: VehicleEntity): this(){
         this.id = vehicleEntity.id
@@ -46,6 +47,7 @@ class VehicleBoundary(
         this.height = vehicleEntity.height
         this.latitude = vehicleEntity.latitude
         this.longitude = vehicleEntity.longitude
+        this.alert = vehicleEntity.alert
     }
 
     fun toEntity(): VehicleEntity{
@@ -70,6 +72,7 @@ class VehicleBoundary(
         vehicleEntity.height = height
         vehicleEntity.latitude = latitude
         vehicleEntity.longitude = longitude
+        vehicleEntity.alert = alert
 
         return vehicleEntity
     }
@@ -94,6 +97,7 @@ class VehicleBoundary(
                 " width=$width," +
                 " height=$height," +
                 " latitude=$latitude," +
-                " longitude=$longitude)"
+                " longitude=$longitude," +
+                " alert=$alert )"
     }
 }

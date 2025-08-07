@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, UploadFile, File, Depends
+from fastapi import FastAPI, HTTPException, UploadFile, File, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 import cv2
@@ -49,14 +49,13 @@ def build_models():
     }
 
 
-@app.get(
-    "/start/{camera_id}", dependencies=[Depends(roles_required(["ADMIN", "USER"]))]
-)
-async def start_work(camera_id: str):
+@app.get("/start/{camera_id}", dependencies=[Depends(roles_required(["ADMIN", "USER"]))])
+async def start_work(request: Request, camera_id: str):
     global models
-    models = build().get("models", {})
+    auth_header = request.headers.get("Authorization")
+    models = build().get("models",{})
     try:
-        return await start(models, camera_id)
+        return await start(auth_header, models,camera_id)
     except Exception as e:
         tb = traceback.format_exc()
         print(f"{str(e)}\n Location:\n{tb}")
@@ -88,14 +87,15 @@ async def process_image_demo(camera_id: str, file: UploadFile = File(...)):
 @app.post(
     "/demo_work/{camera_id}", dependencies=[Depends(roles_required(["ADMIN", "USER"]))]
 )
-async def demo_work_flow(camera_id: str, file1: UploadFile = File(None)):
+async def demo_work_flow(request: Request, camera_id: str, file1: UploadFile = File(None)):
     global models
+    auth_header = request.headers.get("Authorization")
     flag = 0
     try:
         file_content = await file1.read() if file1 is not None else None
         if file_content is None:
             flag = 1
-        output = demo_work(file_content, models, camera_id, flag=flag)
+        output = demo_work(auth_header, file_content, models, camera_id, flag=flag)
 
         return output
 

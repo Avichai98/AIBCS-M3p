@@ -10,7 +10,6 @@ import httpx
 import json
 import pytz
 from azure.storage.blob import BlobServiceClient
-from utils.auth_utils import get_auth_token
 
 sys.path.append(
     os.path.join(
@@ -85,13 +84,13 @@ stop_event = asyncio.Event()
 loop_task = None
 
 
-async def start(models, camera_id):
+async def start(auth_header, models, camera_id):
     global loop_task
     if loop_task and not loop_task.done():
         return {"message": "Already running"}
 
     stop_event.clear()
-    loop_task = asyncio.create_task(work(models, camera_id))
+    loop_task = asyncio.create_task(work(auth_header, models, camera_id))
     return {"message": "Started"}
 
 
@@ -132,7 +131,7 @@ def process_image(image, models, camera_id):
                 "typeProb": float(vehicle.get("object_prob", 0)),
                 "manufacturerProb": float(vehicle.get("make_prob", 0)),
                 "colorProb": float(vehicle.get("color_prob", 0)),
-                "imageUrl": "none",  # str(encode_image_to_base64(car_img)),
+                "imageUrl": "none",
                 "description": str(car_damage_results),
                 "stayDuration": 0,
                 "top": int(rect["top"]),
@@ -161,7 +160,7 @@ def crop_image(image, model):
     return output_path
 
 
-def demo_work(image_upload, models, camera_id, flag=0):
+def demo_work(auth_header, image_upload, models, camera_id, flag=0):
     """
     This function is a demo workflow that simulates the process of capturing an image,
     detecting vehicles, blurring faces, and detecting car damages.
@@ -173,7 +172,7 @@ def demo_work(image_upload, models, camera_id, flag=0):
         if not camera_name:
             raise HTTPException(status_code=500, detail="Camera is not working.")
         image = camera_name["image"]
-        # If image is PIL, convert to numpy array
+        # If the image is PIL, convert to a numpy array
         if isinstance(image, Image.Image):
             image = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
     else:
@@ -182,12 +181,14 @@ def demo_work(image_upload, models, camera_id, flag=0):
         image = image.resize((new_width, new_height))
         image = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
     full_list = process_image(image, models, camera_id).get("vehicles", [])
-    output = compare_all_vehicles_from_db(full_list, models, image, camera_id)
+    output = compare_all_vehicles_from_db(
+        auth_header, full_list, models, image, camera_id
+    )
 
     return output
 
 
-async def work(models, camera_id):
+async def work(auth_header, models, camera_id):
     camera = models.get("camera")
     if not camera:
         raise HTTPException(status_code=500, detail="camera is not initialized.")
@@ -215,6 +216,7 @@ async def work(models, camera_id):
         await asyncio.get_running_loop().run_in_executor(
             None,
             compare_all_vehicles_from_db,
+            auth_header,
             full_list.get("vehicles", []),
             models,
             new_image,
@@ -229,7 +231,7 @@ def compare_vehicles_from_files(db_vehicle_data, image_vehicle_data):
     """
     Accepts two JSON files:
     - db_vehicle_file: JSON file with db_vehicle object
-    - image_vehicle_file: JSON file with image_vehicle object
+    - image_vehicle_file: JSON file with an image_vehicle object
 
     Returns the similarity score.
     """
@@ -253,7 +255,7 @@ def compare_vehicles_from_files(db_vehicle_data, image_vehicle_data):
 
 def compare_vehicles(db_vehicle, image_vehicle, weights=None):
     """
-    Compare two vehicles and return similarity score (0-100%).
+    Compare two vehicles and return a similarity score (0-100%).
     Includes type, manufacturer, color, bbox, and optional damage.
 
     :param db_vehicle: dict from database
@@ -398,7 +400,7 @@ def compare_vehicles(db_vehicle, image_vehicle, weights=None):
     damage_score = damage_match(
         db_vehicle.get("details", {}), image_vehicle.get("details", {})
     )
-    # Final weighted total
+    # Final-weighted total
     total_score = (
         weights["type"] * type_score
         + weights["manufacturer"] * manufacturer_score
@@ -411,11 +413,12 @@ def compare_vehicles(db_vehicle, image_vehicle, weights=None):
 
 
 def compare_all_vehicles_from_db(
-    detected_vehicles, models, image, camera_id="6884dd8be79f33241d1688ab"
+    auth_header, detected_vehicles, models, image, camera_id="6884dd8be79f33241d1688ab"
 ):
     """
     Connect to MongoDB, fetch all stored vehicles, and compare with the detected ones.
 
+    :param auth_header:
     :param models:
     :param image:
     :param camera_id:
@@ -426,8 +429,6 @@ def compare_all_vehicles_from_db(
     :return: List of match results (dict with db_vehicle, detected_vehicle, score)
     """
 
-    url = f"http://data-management-service:8080/vehicles/getVehiclesByCameraId/{camera_id}"
-
     try:
         Image_blur_model = models.get("image_blur")
     except Exception as e:
@@ -435,9 +436,10 @@ def compare_all_vehicles_from_db(
             status_code=500, detail=f"Image blur model not initialized: {str(e)}"
         )
 
+    url = f"http://data-management-service:8080/vehicles/getVehiclesByCameraId/{camera_id}"
+
     try:
-        token = get_auth_token()
-        headers = {"Authorization": f"Bearer {token}"}
+        headers = {"Authorization": auth_header}
         response = httpx.get(url, headers=headers)
 
         if response.status_code == 404:
