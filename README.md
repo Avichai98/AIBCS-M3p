@@ -24,11 +24,11 @@ Vehicle Recognition Service: Identifies vehicles by visual features (type, brand
 
 Comparison Service: Matches vehicles across time intervals to track how long they’ve been parked. [compare_all_vehicles_from_db](https://github.com/Avichai98/AIBCS-M3p/blob/524f5670613a38405ee6bbc4a0045f468beb988d/backend/services/python-services/services/vehicle_processing_service.py#L414)
 
-Alert Service: Generates and sends automated alerts/reports when vehicles overstay.[createAlert](https://github.com/Avichai98/AIBCS-M3p/blob/524f5670613a38405ee6bbc4a0045f468beb988d/backend/services/kotlin-services/AlertService/src/main/kotlin/app/alertservice/services/AlertServiceImpl.kt#L31)
+Alert Service: Generates and sends automated alerts/reports when vehicles overstay. [createAlert](https://github.com/Avichai98/AIBCS-M3p/blob/524f5670613a38405ee6bbc4a0045f468beb988d/backend/services/kotlin-services/AlertService/src/main/kotlin/app/alertservice/services/AlertServiceImpl.kt#L31)
 
 Data Service: Stores vehicle metadata and event logs in MongoDB.
 
-Client Portal: A React-based interface for municipalities to view reports, alerts, and statistics.[frontend](https://github.com/Avichai98/AIBCS-M3p/tree/524f5670613a38405ee6bbc4a0045f468beb988d/frontend)
+Client Portal: A React-based interface for municipalities to view reports, alerts, and statistics. [frontend](https://github.com/Avichai98/AIBCS-M3p/tree/524f5670613a38405ee6bbc4a0045f468beb988d/frontend)
 
 ## Optimizations
 
