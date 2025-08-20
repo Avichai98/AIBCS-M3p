@@ -22,19 +22,17 @@ _AI Models:_ Spectrico (vehicle type/color recognition), suryaremanan Damaged Ca
 
 Vehicle Recognition Service: Identifies vehicles by visual features (type, brand, color, damages,location) while anonymizing license plates and faces. [process_image](https://github.com/Avichai98/AIBCS-M3p/blob/524f5670613a38405ee6bbc4a0045f468beb988d/backend/services/python-services/services/vehicle_processing_service.py#L106)
 
-Comparison Service: Matches vehicles across time intervals to track how long they’ve been parked.[compare_all_vehicles_from_db](https://github.com/Avichai98/AIBCS-M3p/blob/524f5670613a38405ee6bbc4a0045f468beb988d/backend/services/python-services/services/vehicle_processing_service.py#L414)
+Comparison Service: Matches vehicles across time intervals to track how long they’ve been parked. [compare_all_vehicles_from_db](https://github.com/Avichai98/AIBCS-M3p/blob/524f5670613a38405ee6bbc4a0045f468beb988d/backend/services/python-services/services/vehicle_processing_service.py#L414)
 
-Alert Service: Generates and sends automated alerts/reports when vehicles overstay.
+Alert Service: Generates and sends automated alerts/reports when vehicles overstay.[createAlert](https://github.com/Avichai98/AIBCS-M3p/blob/524f5670613a38405ee6bbc4a0045f468beb988d/backend/services/kotlin-services/AlertService/src/main/kotlin/app/alertservice/services/AlertServiceImpl.kt#L31)
 
 Data Service: Stores vehicle metadata and event logs in MongoDB.
 
-Client Portal: A React-based interface for municipalities to view reports, alerts, and statistics.
+Client Portal: A React-based interface for municipalities to view reports, alerts, and statistics.[frontend](https://github.com/Avichai98/AIBCS-M3p/tree/524f5670613a38405ee6bbc4a0045f468beb988d/frontend)
 
 ## Optimizations
 
 ## Lessons Learned
-
-Training and tuning multiple AI models (YOLO vs. Faster R-CNN) taught us that speed matters as much as accuracy—YOLO was chosen for real-time feasibility.
 
 Building in privacy-preserving AI required creative trade-offs, like balancing detection accuracy with anonymization.
 
