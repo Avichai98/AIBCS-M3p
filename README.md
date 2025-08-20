@@ -20,9 +20,9 @@ _AI Models:_ Spectrico (vehicle type/color recognition), suryaremanan Damaged Ca
 
 **System Design:**
 
-Vehicle Recognition Service: Identifies vehicles by visual features (type, brand, color, damages,location) while anonymizing license plates and faces. [process_image]
+Vehicle Recognition Service: Identifies vehicles by visual features (type, brand, color, damages,location) while anonymizing license plates and faces. [process_image](https://github.com/Avichai98/AIBCS-M3p/blob/524f5670613a38405ee6bbc4a0045f468beb988d/backend/services/python-services/services/vehicle_processing_service.py#L106)
 
-Comparison Service: Matches vehicles across time intervals to track how long they’ve been parked.[compare_all_vehicles_from_db]
+Comparison Service: Matches vehicles across time intervals to track how long they’ve been parked.[compare_all_vehicles_from_db](https://github.com/Avichai98/AIBCS-M3p/blob/524f5670613a38405ee6bbc4a0045f468beb988d/backend/services/python-services/services/vehicle_processing_service.py#L414)
 
 Alert Service: Generates and sends automated alerts/reports when vehicles overstay.
 
