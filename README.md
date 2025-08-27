@@ -73,11 +73,8 @@ The system is designed as a **modular microservices architecture**, allowing sca
   </tbody>
 </table>
 
-### Diagrams
-- **Class Diagrams:** Show the main entities such as Vehicle, Alert, Camera, and User.  
-- **Sequence Diagrams:** Demonstrate the flow from image capture → vehicle recognition → comparison → alert generation.  
-- **State & Component Diagrams:** Illustrate system states, fault tolerance, and modular component interactions.  
-- **Data Flow & Deployment Diagrams:** Show how information moves between services and how the system is deployed across infrastructure.
+### Data Flow 
+  <img src="https://github.com/Avichai98/AIBCS-M3p/blob/tomer-touchups/flow.png"/>
   
 ## Implementation Details
 Important implementation references:  
