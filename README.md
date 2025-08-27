@@ -1,6 +1,6 @@
 ## AI Based Camera System – Smart Parking Management (AIBCS-M3P)
 
-# By: Tomer Harel and Avichi \_\_
+# By: Tomer Harel and Avichai Shchori
 
 An AI-powered system designed to monitor and manage short-term public parking zones in cities—without relying on license plates or personal identifiers. Our system balances effective enforcement with strict privacy protection, offering municipalities a smarter way to manage urban parking.
 
