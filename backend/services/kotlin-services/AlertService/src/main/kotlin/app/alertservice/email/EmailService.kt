@@ -1,7 +1,7 @@
 package app.alertservice.email
 
-import org.springframework.mail.SimpleMailMessage
 import org.springframework.mail.javamail.JavaMailSender
+import org.springframework.mail.javamail.MimeMessageHelper
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Mono
 import reactor.core.scheduler.Schedulers
@@ -10,16 +10,21 @@ import reactor.core.scheduler.Schedulers
 class EmailService(
     private val mailSender: JavaMailSender
 ) {
-
-    fun sendEmail(to: String, subject: String, body: String): Mono<Void> {
+    fun sendEmailHtml(
+        to: String,
+        subject: String,
+        bodyHtml: String
+    ): Mono<Void> {
         return Mono.fromRunnable<Void> {
-            val message = SimpleMailMessage().apply {
-                setTo(to)
-                this.subject = subject
-                text = body
-            }
-            println(">>> About to send email: $message")
-            mailSender.send(message)
+            val mimeMessage = mailSender.createMimeMessage()
+            val helper = MimeMessageHelper(mimeMessage, true, "UTF-8")
+
+            helper.setTo(to)
+            helper.setSubject(subject)
+            helper.setText(bodyHtml, true) // HTML enabled
+
+            println(">>> About to send HTML email")
+            mailSender.send(mimeMessage)
             println(">>> Email send() returned")
         }
             .subscribeOn(Schedulers.boundedElastic())
@@ -27,6 +32,6 @@ class EmailService(
                 System.err.println("❌ Error sending email: ${e.message}")
                 e.printStackTrace()
             }
-            .then() // Return Mono<Void>
+            .then()
     }
 }

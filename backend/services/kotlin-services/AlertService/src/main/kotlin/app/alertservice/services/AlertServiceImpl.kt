@@ -41,15 +41,50 @@ class AlertServiceImpl(
     }
 
     override fun sendAlert(alert: AlertBoundary): Mono<Void> {
-        return emailService.sendEmail(
+        val vehicle = alert.vehicleBoundary
+
+        val bodyHtml = """
+        <html>
+        <body style="font-family: Arial, sans-serif; color: #333;">
+            <h2 style="color:#d9534f;">🚨 Parking Violation Detected</h2>
+            <p>A vehicle has been detected staying longer than permitted.</p>
+            
+            <h3>Alert Details:</h3>
+            <ul>
+                <li><b>ID:</b> ${alert.id}</li>
+                <li><b>Camera ID:</b> ${alert.cameraId}</li>
+                <li><b>Type:</b> ${alert.type}</li>
+                <li><b>Severity:</b> ${alert.severity}</li>
+                <li><b>Description:</b> ${alert.description}</li>
+                <li><b>Timestamp:</b> ${alert.timestamp}</li>
+            </ul>
+            
+            <h3>Vehicle Details:</h3>
+            <ul>
+                <li><b>Type:</b> ${vehicle?.type ?: "Unknown"}</li>
+                <li><b>Manufacturer:</b> ${vehicle?.manufacturer ?: "Unknown"}</li>
+                <li><b>Color:</b> ${vehicle?.color ?: "Unknown"}</li>
+                <li><b>Stay Duration:</b> ${vehicle?.stayDurationFormatted ?: (vehicle?.stayDuration?.toString() ?: "N/A")}</li>
+                <li><b>Location:</b> ${vehicle?.latitude}, ${vehicle?.longitude}</li>
+            </ul>
+            
+            ${if (vehicle?.imageUrl != null) """
+                <p><b>Captured Image:</b></p>
+                <img src="${vehicle.imageUrl}" 
+                     alt="Vehicle image" 
+                     style="max-width:500px; border:1px solid #ccc;"/>
+            """ else "<p><i>No image available</i></p>"}
+        </body>
+        </html>
+    """.trimIndent()
+
+        return emailService.sendEmailHtml(
             to = "tchjha2@gmail.com",
-            subject = "Test email from alert process",
-            body = "This is a test email from the alert workflow."
+            subject = "Parking Violation Alert",
+            bodyHtml = bodyHtml
         ).onErrorResume { e ->
-                println("Failed to send alert email: ${e.message}")
-                Mono.empty()
-            }
-
+            println("Failed to send alert email: ${e.message}")
+            Mono.empty()
+        }
     }
-
 }
