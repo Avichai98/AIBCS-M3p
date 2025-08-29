@@ -91,21 +91,14 @@ Testing included:
 - **Privacy Tests:** Simulated 50 unauthorized access attempts, all successfully blocked.  
 - **Usability Tests:** 90% of municipal staff completed assigned tasks without training.  
 
-## Results & Success Metrics
-- Real-time detection achieved at 30 FPS.  
-- Alerts correctly generated for ~60% of overstaying cases in prototype stage.  
-- Fault tolerance: >95% recovery rate from simulated failures.  
-- Positive usability feedback from stakeholders.  
-
 ## Lessons Learned
-- Building a **privacy-first AI** system required trade-offs between accuracy and anonymization.  
+- Building a **privacy-first AI** system required trade-offs between accuracy and privacy.  
 - Microservices allowed easier scalability and isolated development of new features.  
 - Clear metrics (accuracy, response time, usability) helped guide iterative improvements.  
 - Real-world constraints, such as outdoor camera durability and varying lighting conditions, introduced additional challenges.  
 
 ## Future Work
 - Improve recognition accuracy with multimodal AI models.  
-- Extend coverage to public transport lanes and emergency vehicle monitoring.  
 - Explore distributed edge-computing deployments for scalability.  
 - Integrate with cloud platforms for large-scale city-wide rollout.
 
