@@ -23,7 +23,6 @@ from config.auth_middleware import JWTBearer, roles_required
 from config.securitySchemes import custom_openapi
 
 
-start_flag = 0
 models = {}
 app = FastAPI(title="AI Vehicle & Face Processing API")
 
